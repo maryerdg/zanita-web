@@ -2,7 +2,6 @@ import React from 'react';
 import Link from 'next/link';
 import { Product } from '@/data/products';
 import { PlaceholderImage } from '@/components/ui/PlaceholderImage';
-import { SpiceBadge } from '@/components/ui/SpiceBadge';
 import { ShoppingBag } from 'lucide-react';
 
 interface ProductCardProps {
@@ -15,12 +14,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <Link href={`/productos/${product.slug}`} className="block relative overflow-hidden">
         <PlaceholderImage
           title={product.name}
-          category={product.category.toUpperCase()}
+          category={product.categoryLabel.toUpperCase()}
           colorAccent={product.colorAccent}
           aspectRatio="square"
         />
         <div className="absolute top-3 right-3 z-10">
-          <SpiceBadge level={product.spiceLevel} name={product.spiceName} />
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#87201D] text-white shadow-xs">
+            {product.categoryLabel}
+          </span>
         </div>
       </Link>
 
@@ -39,17 +40,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         <div className="flex items-center justify-between pt-3 border-t border-[#DEC0BC]/30">
           <div>
-            <span className="text-xs text-[#8B716E] block">Desde</span>
-            <div className="flex items-baseline gap-2">
-              <span className="font-serif font-bold text-lg text-[#87201D]">
-                ${product.price} MXN
-              </span>
-              {product.originalPrice && (
-                <span className="text-xs text-[#8B716E] line-through">
-                  ${product.originalPrice}
-                </span>
-              )}
-            </div>
+            <span className="text-xs text-[#8B716E] block">Precio</span>
+            <span className="font-serif font-bold text-lg text-[#87201D]">
+              ${product.price} MXN
+            </span>
           </div>
 
           <Link

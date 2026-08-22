@@ -2,9 +2,26 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { SITE_CONFIG } from '@/config/site';
 import { POLICIES, Policy } from '@/data/policies';
 import { Modal } from '@/components/ui/Modal';
-import { Flame, Heart, Mail, MapPin, Phone } from 'lucide-react';
+import { Flame, Heart, MapPin, MessageSquare } from 'lucide-react';
+
+const InstagramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 24 24"
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
 
 export const Footer: React.FC = () => {
   const [activePolicy, setActivePolicy] = useState<Policy | null>(null);
@@ -22,11 +39,11 @@ export const Footer: React.FC = () => {
               <span className="font-serif font-bold text-2xl text-[#FAEFE0]">Zanita</span>
             </Link>
             <p className="text-xs text-[#DEC0BC] leading-relaxed">
-              Snacks artesanales deshidratados con chile de la casa, elaborados con frutas seleccionadas y procesos tradicionales sin químicos ni conservadores.
+              {SITE_CONFIG.tagline}. Elaborados bajo programación artesanal en Tijuana, B.C.
             </p>
             <div className="flex items-center gap-2 text-xs text-[#FFA9B6]">
               <Heart className="w-3.5 h-3.5 fill-current" />
-              <span>Sabor Mexicano 100% Artesanal</span>
+              <span>Negocio Local en Tijuana</span>
             </div>
           </div>
 
@@ -51,7 +68,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link href="/puntos-de-entrega" className="hover:text-white transition-colors">
-                  Puntos de Entrega
+                  Zonas & Modalidades de Entrega
                 </Link>
               </li>
             </ul>
@@ -59,50 +76,64 @@ export const Footer: React.FC = () => {
 
           {/* Legal / Policies */}
           <div className="space-y-3">
-            <h4 className="font-serif font-bold text-sm tracking-wider uppercase text-[#FFCDC8]">Políticas y Garantía</h4>
+            <h4 className="font-serif font-bold text-sm tracking-wider uppercase text-[#FFCDC8]">Información & Políticas</h4>
             <ul className="space-y-2 text-xs text-[#DEC0BC]">
               <li>
                 <button
                   onClick={() => setActivePolicy(POLICIES.privacidad)}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
-                  Aviso de Privacidad
+                  Aviso de Privacidad (Preliminar)
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setActivePolicy(POLICIES.terminos)}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
-                  Términos y Condiciones
+                  Términos de Servicio (Preliminar)
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setActivePolicy(POLICIES.envios)}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
-                  Política de Envíos
+                  Modalidades de Entrega
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Official Contact */}
           <div className="space-y-3">
-            <h4 className="font-serif font-bold text-sm tracking-wider uppercase text-[#FFCDC8]">Contacto</h4>
-            <ul className="space-y-2 text-xs text-[#DEC0BC]">
+            <h4 className="font-serif font-bold text-sm tracking-wider uppercase text-[#FFCDC8]">Contacto Oficial</h4>
+            <ul className="space-y-3 text-xs text-[#DEC0BC]">
               <li className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-[#FFA9B6]" />
-                <span>Puntos autorizados & envíos a domicilio</span>
+                <MapPin className="w-4 h-4 text-[#FFA9B6] shrink-0" />
+                <span>Entregas programadas en Tijuana, B.C.</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-[#FFA9B6]" />
-                <span>hola@zanita.mx</span>
+              <li>
+                <a
+                  href={SITE_CONFIG.whatsapp.urlWithMessage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[#FFA9B6] hover:underline font-semibold"
+                >
+                  <MessageSquare className="w-4 h-4 shrink-0" />
+                  <span>WhatsApp: {SITE_CONFIG.whatsapp.display}</span>
+                </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-[#FFA9B6]" />
-                <span>Atención a Clientes via WhatsApp</span>
+              <li>
+                <a
+                  href={SITE_CONFIG.instagram.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[#FFA9B6] hover:underline font-semibold"
+                >
+                  <InstagramIcon className="w-4 h-4 shrink-0" />
+                  <span>Instagram: {SITE_CONFIG.instagram.handle}</span>
+                </a>
               </li>
             </ul>
           </div>
@@ -110,7 +141,7 @@ export const Footer: React.FC = () => {
 
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-[#8B716E] gap-4">
           <p>© {new Date().getFullYear()} Zanita. Todos los derechos reservados.</p>
-          <p className="font-mono">Desarrollo Artesanal E-Commerce</p>
+          <p className="font-mono">Tijuana, B.C. • Pedidos con 3 días de anticipación</p>
         </div>
       </div>
 
@@ -122,7 +153,7 @@ export const Footer: React.FC = () => {
           title={activePolicy.title}
         >
           <div className="space-y-4">
-            <p className="text-xs text-[#8B716E] italic">Última actualización: {activePolicy.lastUpdated}</p>
+            <p className="text-xs text-[#8B716E] italic">Estado: {activePolicy.lastUpdated}</p>
             <p className="font-semibold">{activePolicy.summary}</p>
             {activePolicy.sections.map((section, idx) => (
               <div key={idx} className="space-y-1">

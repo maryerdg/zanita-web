@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { SITE_CONFIG } from '@/config/site';
 import { Menu, X, ShoppingBag, Flame, MapPin } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -9,9 +10,9 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { href: '/', label: 'Inicio' },
-    { href: '/productos', label: 'Catálogo Artesanal' },
+    { href: '/productos', label: 'Catálogo de Productos' },
     { href: '/nosotros', label: 'Nuestra Historia' },
-    { href: '/puntos-de-entrega', label: 'Puntos de Entrega' },
+    { href: '/puntos-de-entrega', label: 'Zonas & Entregas' },
   ];
 
   return (
@@ -19,7 +20,7 @@ export const Navbar: React.FC = () => {
       {/* Top Banner */}
       <div className="bg-[#87201D] text-white text-[11px] font-bold tracking-wider uppercase text-center py-1.5 px-4 flex items-center justify-center gap-2">
         <Flame className="w-3.5 h-3.5 fill-current text-[#FFA9B6]" />
-        <span>Envíos sin costo en Puntos de Entrega autorizados • Snacks 100% Artesanales</span>
+        <span>{SITE_CONFIG.noticeBanner}</span>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,7 +47,7 @@ export const Navbar: React.FC = () => {
                   Zanita
                 </span>
                 <span className="text-[9px] uppercase tracking-widest font-bold text-[#8B716E]">
-                  Artesanal & Picante
+                  Snacks & Chamoy • Tijuana
                 </span>
               </div>
             </Link>
@@ -72,7 +73,7 @@ export const Navbar: React.FC = () => {
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#832709] bg-[#F7EDDE] px-3 py-1.5 rounded-full border border-[#DEC0BC]/40 hover:bg-[#EBE1D2] transition-colors"
             >
               <MapPin className="w-3.5 h-3.5" />
-              <span>Cobertura Local</span>
+              <span>Ver Zonas</span>
             </Link>
 
             <button
@@ -108,7 +109,7 @@ export const Navbar: React.FC = () => {
               className="flex items-center justify-center gap-2 w-full text-sm font-bold text-[#832709] bg-[#F7EDDE] py-2.5 rounded-md border border-[#DEC0BC]/40"
             >
               <MapPin className="w-4 h-4" />
-              <span>Ver Puntos de Entrega</span>
+              <span>Zonas & Modalidades de Entrega</span>
             </Link>
           </div>
         </div>
