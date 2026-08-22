@@ -22,11 +22,11 @@ export default function HomePage() {
               </div>
 
               <h1 className="font-serif font-bold text-4xl sm:text-5xl lg:text-6xl text-[#1F1B12] leading-[1.1] tracking-tight">
-                Manzanas, uvas, charolas y snacks preparados con <span className="text-[#87201D] italic">chamoy de la casa</span>.
+                Manzanas, uvas, charolas y snacks preparados con <span className="text-[#87201D] italic">chamoy</span>.
               </h1>
 
               <p className="text-base sm:text-lg text-[#57413F] leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Preparaciones artesanales elaboradas bajo pedido en Tijuana por Ximena. Cada orden se programa con anticipación para ofrecer la máxima calidad en cada combinación.
+                Cada pedido se programa con anticipación para organizar su preparación y entrega.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -73,13 +73,13 @@ export default function HomePage() {
                 </div>
                 <div className="space-y-2">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#832709]">
-                    Favorito de la Casa
+                    Producto Destacado
                   </span>
                   <h2 className="font-serif font-bold text-2xl text-[#1F1B12]">
                     Manzanita Verde
                   </h2>
                   <p className="text-xs text-[#57413F] leading-relaxed">
-                    Manzana verde fresca preparada con cubierta especial y chamoy de la casa.
+                    Manzanita verde preparada.
                   </p>
                 </div>
 
@@ -133,7 +133,7 @@ export default function HomePage() {
               ¿Cómo funcionan las entregas?
             </h2>
             <p className="text-sm text-[#57413F]">
-              Para garantizar la máxima calidad y organizar la producción de cada snack, operamos bajo un esquema claro de programación.
+              Cada pedido se programa con anticipación para organizar su preparación y entrega.
             </p>
           </div>
 
@@ -144,7 +144,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-serif font-bold text-lg text-[#1F1B12]">3 Días de Anticipación</h3>
               <p className="text-xs text-[#57413F] leading-relaxed">
-                Todos los pedidos requieren solicitarse con al menos 3 días de anticipación para coordinar insumos frescos y tiempo de preparación.
+                Todos los pedidos requieren solicitarse con al menos 3 días de anticipación para organizar la preparación.
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-serif font-bold text-lg text-[#1F1B12]">Pickup en CETYS</h3>
               <p className="text-xs text-[#57413F] leading-relaxed">
-                Único punto de recolección presencial habilitado en CETYS, disponible de lunes a viernes en horario de 4:00 p.m. a 8:00 p.m.
+                Único punto de recolección presencial disponible en CETYS, de lunes a viernes de 4:00 p.m. a 8:00 p.m.
               </p>
             </div>
           </div>

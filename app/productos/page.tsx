@@ -35,7 +35,7 @@ export default function CatalogPage() {
           Nuestros Productos & Snacks
         </h1>
         <p className="text-sm md:text-base text-[#57413F] max-w-2xl mx-auto leading-relaxed">
-          Manzanas, uvas, charolas de toppings y paquetes preparados al momento con chamoy artesanal de la casa. Pedidos con 3 días de anticipación.
+          Manzanas, uvas, charolas de toppings y paquetes preparados con chamoy. Pedidos con 3 días de anticipación.
         </p>
       </div>
 

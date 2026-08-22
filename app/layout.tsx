@@ -17,8 +17,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: 'Zanita - Snacks Artesanales y Picantes',
-  description: 'Snacks artesanales de frutas deshidratadas con chile de la casa y mezclas únicas.',
+  title: 'Zanita - Manzanas, Uvas y Charolas con Chamoy',
+  description: 'Manzanas, uvas, charolas y snacks preparados con chamoy y toppings en Tijuana, B.C.',
 };
 
 export default function RootLayout({

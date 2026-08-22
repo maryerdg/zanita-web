@@ -1,6 +1,6 @@
 import React from 'react';
 import { SITE_CONFIG } from '@/config/site';
-import { Sparkles, MessageSquare, Heart, Clock, CheckCircle2 } from 'lucide-react';
+import { Sparkles, MessageSquare, Heart, Clock, UserCheck } from 'lucide-react';
 
 export default function NosotrosPage() {
   return (
@@ -37,15 +37,15 @@ export default function NosotrosPage() {
           <Clock className="w-7 h-7 text-[#832709]" />
           <h3 className="font-serif font-bold text-lg text-[#1F1B12]">Bajo Programación</h3>
           <p className="text-xs text-[#57413F] leading-relaxed">
-            Pedidos con 3 días de anticipación para organizar la preparación y selección de insumos.
+            Pedidos con 3 días de anticipación para organizar la preparación de cada entrega.
           </p>
         </div>
 
         <div className="p-6 rounded-lg bg-[#FFF8F1] border border-[#DEC0BC]/40 space-y-3">
-          <CheckCircle2 className="w-7 h-7 text-[#4F7942]" />
-          <h3 className="font-serif font-bold text-lg text-[#1F1B12]">Calidad Garantizada</h3>
+          <UserCheck className="w-7 h-7 text-[#4F7942]" />
+          <h3 className="font-serif font-bold text-lg text-[#1F1B12]">Preparación Personal</h3>
           <p className="text-xs text-[#57413F] leading-relaxed">
-            Cada empaque se revisa y entrega personalmente cuidando el sazón de la casa.
+            Ximena prepara, empaqueta y coordina personalmente la entrega de cada orden.
           </p>
         </div>
       </div>
