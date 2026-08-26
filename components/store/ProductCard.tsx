@@ -12,114 +12,35 @@ interface ProductCardProps {
   photoSrc?: string;
 }
 
-// Category background palette and abstract decoration style for editorial cards
-const getCategoryCardStyle = (product: Product) => {
-  if (product.slug === 'manzanita-verde') {
-    return {
-      bg: 'bg-gradient-to-br from-[#FFF9F2] via-[#4F7942]/15 to-[#F5EBDC]',
-      pillBg: 'bg-[#4F7942]/10 text-[#4F7942] border-[#4F7942]/20',
-      showApple: false,
-      cornerElement: null,
-      abstractBadge: 'Verde Gala',
-    };
-  }
-  if (product.slug === 'manzanita-roja-gala') {
-    return {
-      bg: 'bg-gradient-to-br from-[#FFF9F2] via-[#A73832]/15 to-[#F5EBDC]',
-      pillBg: 'bg-[#A73832]/10 text-[#A73832] border-[#A73832]/20',
-      showApple: true,
-      cornerElement: '/brand/elements/chilli-apple.webp',
-      abstractBadge: 'Roja Gala',
-    };
-  }
-
-  switch (product.category) {
-    case 'combos':
-      return {
-        bg: 'bg-gradient-to-br from-[#FFF9F2] via-[#F09CA9]/25 to-[#F5EBDC]',
-        pillBg: 'bg-[#F09CA9]/30 text-[#A73832] border-[#F09CA9]/40',
-        showApple: false,
-        cornerElement: null,
-        abstractBadge: 'Combo',
-      };
-    case 'charolas':
-      return {
-        bg: 'bg-gradient-to-br from-[#FFF9F2] via-[#D46240]/15 to-[#F5EBDC]',
-        pillBg: 'bg-[#D46240]/10 text-[#D46240] border-[#D46240]/20',
-        showApple: false,
-        cornerElement: '/brand/elements/gummy-ring-red.webp',
-        abstractBadge: 'Charola',
-      };
-    case 'uvas':
-      return {
-        bg: 'bg-gradient-to-br from-[#FFF9F2] via-[#4F7942]/15 to-[#F5EBDC]',
-        pillBg: 'bg-[#4F7942]/10 text-[#4F7942] border-[#4F7942]/20',
-        showApple: false,
-        cornerElement: '/brand/elements/grapes-green.webp',
-        abstractBadge: 'Uvas',
-      };
-    case 'snacks':
-    default:
-      return {
-        bg: 'bg-gradient-to-br from-[#FFF9F2] via-[#F09CA9]/20 to-[#F5EBDC]',
-        pillBg: 'bg-[#A73832]/10 text-[#A73832] border-[#A73832]/20',
-        showApple: false,
-        cornerElement: null,
-        abstractBadge: 'Snack',
-      };
-  }
-};
-
 export const ProductCard: React.FC<ProductCardProps> = ({ product, photoSrc }) => {
-  const cardStyle = getCategoryCardStyle(product);
+  const activePhoto = photoSrc || product.photoSrc;
 
   return (
     <div className="group bg-white rounded-2xl border border-[#E4D5C1] overflow-hidden flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-[#F09CA9]">
-      {/* Product Card Top Media Container */}
-      <div className={`relative aspect-4/3 ${cardStyle.bg} p-6 flex flex-col justify-between overflow-hidden`}>
-        {/* Category Pill */}
-        <div className="flex items-center justify-between z-10">
-          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${cardStyle.pillBg}`}>
+      {/* 1. Entire Top 4:5 Container Functions as Single Clean Placeholder */}
+      <div className={`relative aspect-[4/5] overflow-hidden flex flex-col items-center justify-center p-4 text-center ${
+        activePhoto ? 'bg-[#FFF9F2]' : 'bg-[#FFF9F2] border-b-2 border-dashed border-[#E4D5C1]'
+      }`}>
+        {/* Category Badge - Absolute in Top Left Corner */}
+        <div className="absolute top-3.5 left-3.5 z-10">
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-xs text-[#A73832] border border-[#A73832]/20 shadow-2xs">
             {product.categoryLabel}
           </span>
         </div>
 
-        {/* Media Content: Either Real Photo or Editorial Abstract Brand Card */}
-        {photoSrc ? (
-          <div className="relative w-full h-full my-auto transition-transform duration-300 group-hover:scale-105">
-            <Image
-              src={photoSrc}
-              alt={product.name}
-              fill
-              className="object-cover rounded-lg"
-              sizes="(max-width: 640px) 100vw, 320px"
-            />
-          </div>
+        {/* Media Content: Real Photo (object-cover) OR Direct Centered "FOTO AQUÍ" Text */}
+        {activePhoto ? (
+          <Image
+            src={activePhoto}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, 320px"
+          />
         ) : (
-          <div className="my-auto z-10 space-y-1">
-            <span className="font-serif italic text-xs text-[#6E564F] block">Zanita Tijuana</span>
-            <h4 className="font-serif font-bold text-2xl text-[#261C19] leading-tight group-hover:text-[#A73832] transition-colors">
-              {product.name}
-            </h4>
-          </div>
-        )}
-
-        {/* Abstract Circular Graphic Motif in Card Background */}
-        {!photoSrc && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border border-[#E4D5C1]/50 bg-white/30 pointer-events-none" />
-        )}
-
-        {/* Corner Decorative Element (Only for Gala, Charolas, Uvas) */}
-        {!photoSrc && cardStyle.cornerElement && (
-          <div className="absolute -bottom-2 -right-2 w-16 h-16 opacity-30 group-hover:opacity-60 transition-opacity pointer-events-none">
-            <Image
-              src={cardStyle.cornerElement}
-              alt=""
-              fill
-              className="object-contain"
-              sizes="64px"
-            />
-          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-[#6E564F]/60 select-none">
+            FOTO AQUÍ
+          </span>
         )}
       </div>
 

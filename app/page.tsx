@@ -13,7 +13,7 @@ export default function HomePage() {
     {
       id: 'manzanas',
       name: 'Manzanitas',
-      description: 'Verde y Gala preparadas con cubierta y chamoy.',
+      description: 'Manzanitas verde y roja gala preparadas.',
       href: '/productos',
       element: '/brand/elements/chilli-apple.webp',
       bgAccent: 'bg-[#F09CA9]/20',

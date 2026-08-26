@@ -10,6 +10,7 @@ export interface Product {
   customizationNote?: string;
   featured: boolean;
   colorAccent: string;
+  photoSrc?: string;
 }
 
 export const MOCK_PRODUCTS: Product[] = [
