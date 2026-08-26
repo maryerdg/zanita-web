@@ -154,15 +154,15 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Global MARYER Digital Signature Bar: 3 Independent Rows */}
+      {/* Global MARYER Digital Signature Bar: 3 Independent Rows with Refined Links */}
       <div className="bg-[#F5EBDC] py-8 sm:py-9 px-12 sm:px-16 border-t border-[#E4D5C1] text-center flex flex-col items-center justify-center">
-        {/* Row 1: Isotipo Oficial MD (Desktop 48x48px, Mobile 44x44px) */}
+        {/* Row 1: Isotipo Oficial MD -> https://maryerdigital.com */}
         <div className="mb-3">
           <a
-            href="https://www.instagram.com/maryer.digital/"
+            href="https://maryerdigital.com"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Instagram de MARYER Digital"
+            aria-label="Visitar el sitio web de MARYER Digital"
             className="inline-block transition-transform hover:scale-105"
           >
             <div className="relative w-[44px] h-[44px] sm:w-[48px] sm:h-[48px]">
@@ -177,27 +177,27 @@ export const Footer: React.FC = () => {
           </a>
         </div>
 
-        {/* Row 2: WEBSITE BY MARYER DIGITAL (Independent line) */}
-        <div className="text-[11px] sm:text-[12px] font-bold tracking-widest uppercase text-[#261C19] font-sans">
-          <span>WEBSITE BY </span>
+        {/* Row 2: WEBSITE BY MARYER DIGITAL (Entire phrase is a single link to https://maryerdigital.com) */}
+        <div className="text-[11px] sm:text-[12px] font-bold tracking-widest uppercase font-sans">
           <a
-            href="https://www.instagram.com/maryer.digital/"
+            href="https://maryerdigital.com"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Visitar MARYER Digital en Instagram"
-            className="text-[#A73832] hover:text-[#261C19] hover:underline transition-colors font-extrabold"
+            aria-label="Visitar MARYER Digital"
+            className="group inline-block transition-colors"
           >
-            MARYER DIGITAL
+            <span className="text-[#261C19] group-hover:underline">WEBSITE BY </span>
+            <span className="text-[#A73832] font-extrabold group-hover:underline">MARYER DIGITAL</span>
           </a>
         </div>
 
-        {/* Row 3: @MARYER.DIGITAL (Independent line below with 6-8px top margin) */}
+        {/* Row 3: @MARYER.DIGITAL -> https://www.instagram.com/maryer.digital/ */}
         <div className="mt-2 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase font-sans">
           <a
             href="https://www.instagram.com/maryer.digital/"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Instagram @maryer.digital"
+            aria-label="Instagram de MARYER Digital"
             className="text-[#6E564F] hover:text-[#A73832] hover:underline transition-colors"
           >
             @MARYER.DIGITAL
