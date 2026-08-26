@@ -11,7 +11,7 @@ interface PlaceholderImageProps {
 
 export const PlaceholderImage: React.FC<PlaceholderImageProps> = ({
   title,
-  category = 'Artesanal',
+  category = 'Zanita',
   colorAccent = '#87201D',
   aspectRatio = 'square',
   className = '',
