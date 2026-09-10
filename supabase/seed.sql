@@ -29,14 +29,14 @@ INSERT INTO public.zanita_products (id, slug, name, tagline, price_cents, catego
 ('aaaa0000-0000-0000-0000-000000000002', 'manzanita-roja-gala', 'Manzanita Roja Gala', 'Manzanita roja gala preparada', 5000, 'manzanas', 'Manzanas Preparadas', '#87201D', 2),
 ('aaaa0000-0000-0000-0000-000000000003', 'combo-6-manzanitas-chamoy-jumbo', 'Combo 6 Manzanitas + Chamoy Jumbo', '6 manzanitas con 1 chamoy jumbo', 31000, 'combos', 'Combos & Paquetes', '#D46240', 3),
 ('aaaa0000-0000-0000-0000-000000000004', 'combo-12-manzanitas-chamoy-jumbo', 'Combo 12 Manzanitas + Chamoy Jumbo', '12 manzanitas con 1 chamoy jumbo', 60000, 'combos', 'Combos & Paquetes', '#87201D', 4),
-('aaaa0000-0000-0000-0000-000000000005', 'charola-individual-2-toppings', 'Charola Individual (2 Toppings)', 'Charola individual con 2 toppings a elegir', 12000, 'charolas', 'Charolas Preparadas', '#8E4A56', 5),
+
 ('aaaa0000-0000-0000-0000-000000000006', 'charola-mediana-3-toppings', 'Charola Mediana (3 Toppings)', 'Charola mediana con 3 toppings a elegir', 20000, 'charolas', 'Charolas Preparadas', '#832709', 6),
 ('aaaa0000-0000-0000-0000-000000000007', 'charola-grande-4-toppings', 'Charola Grande (4 Toppings)', 'Charola grande con 4 toppings a elegir', 25000, 'charolas', 'Charolas Preparadas', '#D46240', 7),
 ('aaaa0000-0000-0000-0000-000000000008', 'charola-jumbo-6-toppings', 'Charola Jumbo (6 Toppings)', 'Charola jumbo con 6 toppings a elegir', 50000, 'charolas', 'Charolas Preparadas', '#87201D', 8),
 ('aaaa0000-0000-0000-0000-000000000009', 'mix-de-frutas', 'Mix de Frutas', 'Manzanita, 2 frutas extra de temporada y 4 toppings a elegir', 28000, 'snacks', 'Snacks & Mixes', '#4F7942', 9),
 ('aaaa0000-0000-0000-0000-000000000010', 'munxie-tacos-5-piezas', 'Munxie Tacos (5 piezas)', 'Presentación de 5 piezas', 15000, 'snacks', 'Snacks & Mixes', '#832709', 10),
 ('aaaa0000-0000-0000-0000-000000000011', 'munxie-tacos-13-piezas', 'Munxie Tacos (13 piezas)', 'Presentación de 13 piezas', 32000, 'snacks', 'Snacks & Mixes', '#87201D', 11),
-('aaaa0000-0000-0000-0000-000000000012', 'uvas-forradas', 'Uvas Forradas', 'Uvas forradas', 8000, 'uvas', 'Uvas Preparadas', '#8E4A56', 12)
+('aaaa0000-0000-0000-0000-000000000012', 'uvas-forradas', 'Uvas Forradas', 'Uvas forradas', 9000, 'uvas', 'Uvas Preparadas', '#8E4A56', 12)
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. GRUPOS DE OPCIONES (Usando UUIDs 'bbbb')
@@ -46,26 +46,25 @@ INSERT INTO public.zanita_option_groups (id, name, sort_order) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. OPCIONES (Usando UUIDs 'cccc')
-INSERT INTO public.zanita_options (id, group_id, name, sort_order) VALUES
-('cccc0000-0000-0000-0000-000000000001', 'bbbb0000-0000-0000-0000-000000000001', 'Xtremes', 1),
-('cccc0000-0000-0000-0000-000000000002', 'bbbb0000-0000-0000-0000-000000000001', 'Skwinkles', 2),
-('cccc0000-0000-0000-0000-000000000003', 'bbbb0000-0000-0000-0000-000000000001', 'Skwinkles rellenos', 3),
-('cccc0000-0000-0000-0000-000000000004', 'bbbb0000-0000-0000-0000-000000000001', 'Pica fresas', 4),
-('cccc0000-0000-0000-0000-000000000005', 'bbbb0000-0000-0000-0000-000000000001', 'Panditas', 5),
-('cccc0000-0000-0000-0000-000000000006', 'bbbb0000-0000-0000-0000-000000000001', 'Gusanitos', 6),
-('cccc0000-0000-0000-0000-000000000007', 'bbbb0000-0000-0000-0000-000000000001', 'Donitas de durazno', 7),
-('cccc0000-0000-0000-0000-000000000008', 'bbbb0000-0000-0000-0000-000000000001', 'Donitas de sandía', 8),
-('cccc0000-0000-0000-0000-000000000009', 'bbbb0000-0000-0000-0000-000000000001', 'Donitas de manzana', 9),
-('cccc0000-0000-0000-0000-000000000010', 'bbbb0000-0000-0000-0000-000000000001', 'Chaca chaca', 10),
-('cccc0000-0000-0000-0000-000000000011', 'bbbb0000-0000-0000-0000-000000000001', 'Cacahuates', 11),
-('cccc0000-0000-0000-0000-000000000012', 'bbbb0000-0000-0000-0000-000000000001', 'Tamborcitos', 12),
-('cccc0000-0000-0000-0000-000000000013', 'bbbb0000-0000-0000-0000-000000000001', 'Pepino', 13),
-('cccc0000-0000-0000-0000-000000000014', 'bbbb0000-0000-0000-0000-000000000001', 'Uvas', 14)
+INSERT INTO public.zanita_options (id, group_id, name, sort_order, extra_price_cents) VALUES
+('cccc0000-0000-0000-0000-000000000001', 'bbbb0000-0000-0000-0000-000000000001', 'Xtremes', 1, 0),
+('cccc0000-0000-0000-0000-000000000002', 'bbbb0000-0000-0000-0000-000000000001', 'Skwinkles', 2, 0),
+('cccc0000-0000-0000-0000-000000000003', 'bbbb0000-0000-0000-0000-000000000001', 'Skwinkles rellenos', 3, 0),
+('cccc0000-0000-0000-0000-000000000004', 'bbbb0000-0000-0000-0000-000000000001', 'Pica fresas', 4, 0),
+('cccc0000-0000-0000-0000-000000000005', 'bbbb0000-0000-0000-0000-000000000001', 'Panditas', 5, 0),
+('cccc0000-0000-0000-0000-000000000006', 'bbbb0000-0000-0000-0000-000000000001', 'Gusanitos', 6, 0),
+('cccc0000-0000-0000-0000-000000000007', 'bbbb0000-0000-0000-0000-000000000001', 'Donitas de durazno', 7, 0),
+('cccc0000-0000-0000-0000-000000000008', 'bbbb0000-0000-0000-0000-000000000001', 'Donitas de sandía', 8, 0),
+('cccc0000-0000-0000-0000-000000000009', 'bbbb0000-0000-0000-0000-000000000001', 'Donitas de manzana', 9, 0),
+('cccc0000-0000-0000-0000-000000000010', 'bbbb0000-0000-0000-0000-000000000001', 'Chaca chaca', 10, 0),
+('cccc0000-0000-0000-0000-000000000011', 'bbbb0000-0000-0000-0000-000000000001', 'Cacahuates', 11, 0),
+('cccc0000-0000-0000-0000-000000000012', 'bbbb0000-0000-0000-0000-000000000001', 'Tamborcitos', 12, 0),
+('cccc0000-0000-0000-0000-000000000013', 'bbbb0000-0000-0000-0000-000000000001', 'Pepino', 13, 0),
+('cccc0000-0000-0000-0000-000000000014', 'bbbb0000-0000-0000-0000-000000000001', 'Uvas forradas', 14, 3500)
 ON CONFLICT (id) DO NOTHING;
 
 -- 6. REGLAS DE GRUPOS POR PRODUCTO (Cantidades Requeridas)
 INSERT INTO public.zanita_product_option_groups (product_id, option_group_id, min_selections, max_selections, is_required) VALUES
-('aaaa0000-0000-0000-0000-000000000005', 'bbbb0000-0000-0000-0000-000000000001', 2, 2, true),
 ('aaaa0000-0000-0000-0000-000000000006', 'bbbb0000-0000-0000-0000-000000000001', 3, 3, true),
 ('aaaa0000-0000-0000-0000-000000000007', 'bbbb0000-0000-0000-0000-000000000001', 4, 4, true),
 ('aaaa0000-0000-0000-0000-000000000008', 'bbbb0000-0000-0000-0000-000000000001', 6, 6, true),

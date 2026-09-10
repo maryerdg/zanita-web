@@ -10,7 +10,6 @@ Para vincular las imágenes reales con cada producto del catálogo, las fotograf
 - `manzanita-roja-gala-01.webp`
 - `combo-6-manzanitas-01.webp`
 - `combo-12-manzanitas-01.webp`
-- `charola-individual-01.webp`
 - `charola-mediana-01.webp`
 - `charola-grande-01.webp`
 - `charola-jumbo-01.webp`
