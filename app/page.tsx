@@ -7,7 +7,13 @@ import { ProductCard } from '@/components/store/ProductCard';
 import { ArrowRight, MessageSquare, Clock, MapPin, Calendar, Sparkles } from 'lucide-react';
 
 export default function HomePage() {
-  const featuredProducts = MOCK_PRODUCTS.filter((p) => p.featured).slice(0, 4);
+  const FEATURED_SLUGS = [
+    'manzanita-verde',
+    'charola-grande-4-toppings',
+    'mix-de-frutas',
+    'uvas-forradas'
+  ];
+  const featuredProducts = FEATURED_SLUGS.map(slug => MOCK_PRODUCTS.find(p => p.slug === slug)).filter(Boolean) as typeof MOCK_PRODUCTS;
 
   const categories = [
     {
