@@ -49,9 +49,9 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-16 md:space-y-24 pb-16">
+    <div className="space-y-10 md:space-y-16 lg:space-y-24 pb-16">
       {/* 2. Refined Collage Hero Section Inspired by Zanita's Instagram Feed */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#F5EBDC] via-[#F09CA9]/20 to-[#F5EBDC] py-14 md:py-24 border-b border-[#E4D5C1]">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#F5EBDC] via-[#F09CA9]/20 to-[#F5EBDC] py-10 sm:py-12 md:py-16 lg:py-24 border-b border-[#E4D5C1]">
         {/* Soft Background Circular Accents */}
         <div className="absolute top-1/2 right-10 -translate-y-1/2 w-96 h-96 rounded-full bg-[#F09CA9]/35 blur-2xl pointer-events-none" />
         <div className="absolute top-10 left-1/4 w-72 h-72 rounded-full bg-[#A73832]/5 blur-3xl pointer-events-none" />
@@ -59,23 +59,23 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content Column */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5 lg:space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F09CA9]/30 text-[#A73832] text-xs font-bold uppercase tracking-wider border border-[#F09CA9]/50 shadow-2xs">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Negocio Local en Tijuana</span>
               </div>
 
               {/* Headline: Literal confirmed text "Tu momento dulce, simple y natural." */}
-              <h1 className="font-serif font-bold text-4xl sm:text-5xl lg:text-6xl text-[#261C19] leading-[1.18] tracking-tight">
+              <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-[#261C19] leading-[1.18] tracking-tight">
                 Tu momento{' '}
-                <span className="font-script text-5xl sm:text-6xl lg:text-7xl text-[#A73832] font-normal px-2 inline-block -rotate-2 transform hover:rotate-0 transition-transform">
+                <span className="font-script text-4xl sm:text-5xl lg:text-7xl text-[#A73832] font-normal px-2 inline-block -rotate-2 transform hover:rotate-0 transition-transform">
                   dulce
                 </span>
                 , simple y natural.
               </h1>
 
               {/* Tagline: Literal confirmed text */}
-              <p className="text-base sm:text-lg text-[#6E564F] leading-relaxed max-w-xl mx-auto lg:mx-0 font-sans">
+              <p className="text-sm sm:text-base lg:text-lg text-[#6E564F] leading-relaxed max-w-xl mx-auto lg:mx-0 font-sans">
                 Manzanas, uvas, charolas y snacks preparados con chamoy y toppings.
               </p>
 
@@ -83,36 +83,36 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                 <Link
                   href="/productos"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[#A73832] text-white hover:bg-[#8e2e28] transition-all shadow-xs focus:outline-none focus:ring-2 focus:ring-[#A73832]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 lg:px-8 lg:py-3.5 text-[10px] lg:text-xs font-bold uppercase tracking-wider rounded-md bg-[#A73832] text-white hover:bg-[#8e2e28] transition-all shadow-xs focus:outline-none focus:ring-2 focus:ring-[#A73832]"
                 >
                   <span>Ver productos</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                 </Link>
 
                 <a
                   href={SITE_CONFIG.whatsapp.urlWithMessage}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 text-xs font-bold uppercase tracking-wider rounded-md border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#A73832]/40"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 lg:px-7 lg:py-3.5 text-[10px] lg:text-xs font-bold uppercase tracking-wider rounded-md border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#A73832]/40"
                 >
-                  <MessageSquare className="w-4 h-4 fill-current text-[#4F7942] group-hover:text-[#F5EBDC]" />
+                  <MessageSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4 fill-current text-[#4F7942] group-hover:text-[#F5EBDC]" />
                   <span>Pedir por WhatsApp</span>
                 </a>
               </div>
 
               {/* Trust Badges */}
-              <div className="grid grid-cols-3 gap-4 pt-8 border-t border-[#E4D5C1]/70 max-w-lg mx-auto lg:mx-0">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-5 sm:pt-6 lg:pt-8 border-t border-[#E4D5C1]/70 max-w-md lg:max-w-lg mx-auto lg:mx-0">
                 <div className="text-center lg:text-left">
-                  <span className="block font-serif font-bold text-xl text-[#A73832]">3 Días</span>
-                  <span className="text-[11px] uppercase tracking-wider text-[#6E564F]">Anticipación</span>
+                  <span className="block font-serif font-bold text-base sm:text-lg lg:text-xl text-[#A73832]">3 Días</span>
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#6E564F]">Anticipación</span>
                 </div>
                 <div className="text-center lg:text-left">
-                  <span className="block font-serif font-bold text-xl text-[#A73832]">Tijuana</span>
-                  <span className="text-[11px] uppercase tracking-wider text-[#6E564F]">Negocio Local</span>
+                  <span className="block font-serif font-bold text-base sm:text-lg lg:text-xl text-[#A73832]">Tijuana</span>
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#6E564F]">Negocio Local</span>
                 </div>
                 <div className="text-center lg:text-left">
-                  <span className="block font-serif font-bold text-xl text-[#A73832]">Bajo pedido</span>
-                  <span className="text-[11px] uppercase tracking-wider text-[#6E564F]">Preparación programada</span>
+                  <span className="block font-serif font-bold text-base sm:text-lg lg:text-xl text-[#A73832]">Bajo pedido</span>
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#6E564F]">Preparación programada</span>
                 </div>
               </div>
             </div>
@@ -266,7 +266,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className={`grid gap-3 sm:gap-4 lg:gap-6 ${featuredProducts.length === 1 ? 'grid-cols-1 max-w-[280px] mx-auto' : featuredProducts.length === 2 ? 'grid-cols-2 max-w-xl mx-auto' : featuredProducts.length === 3 ? 'grid-cols-2 min-[520px]:grid-cols-3 max-w-4xl mx-auto' : 'grid-cols-2 min-[520px]:grid-cols-3 sm:grid-cols-4'}`}>
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
