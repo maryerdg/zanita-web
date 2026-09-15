@@ -66,6 +66,7 @@ CREATE TABLE public.zanita_options (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id uuid NOT NULL REFERENCES public.zanita_option_groups(id) ON DELETE CASCADE,
   name text NOT NULL,
+  extra_price_cents integer NOT NULL DEFAULT 0 CHECK (extra_price_cents >= 0),
   is_active boolean NOT NULL DEFAULT true,
   sort_order integer NOT NULL DEFAULT 0,
   UNIQUE(group_id, name)

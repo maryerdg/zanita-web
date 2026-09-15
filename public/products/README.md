@@ -1,55 +1,25 @@
-# Especificaciones de Fotografía para Zanita Web
+# Fotografía de Productos
 
-Este directorio está reservado para las fotografías reales de los productos del catálogo y menú de Zanita.
+Directorio de imágenes optimizadas de los productos del catálogo.
 
-## Nomenclatura de Archivos Preparados
+## Fotografías Actuales (WebP)
 
-Para vincular las imágenes reales con cada producto del catálogo, las fotografías principales deben nombrarse exactamente como se indica a continuación:
+1. `charola-grande-4-toppings.webp`
+2. `charola-jumbo-6-toppings.webp`
+3. `charola-mediana-3-toppings.webp`
+4. `manzanita-roja-gala.webp`
+5. `manzanita-verde.webp`
+6. `mix-de-frutas.webp`
+7. `munxie-tacos-13-piezas.webp`
+8. `munxie-tacos-5-piezas.webp`
+9. `uvas-forradas.webp`
 
-- `manzanita-verde-01.webp`
-- `manzanita-roja-gala-01.webp`
-- `combo-6-manzanitas-01.webp`
-- `combo-12-manzanitas-01.webp`
-- `charola-individual-01.webp`
-- `charola-mediana-01.webp`
-- `charola-grande-01.webp`
-- `charola-jumbo-01.webp`
-- `mix-de-frutas-01.webp`
-- `munxie-tacos-5-01.webp`
-- `munxie-tacos-13-01.webp`
-- `uvas-forradas-01.webp`
+## Productos sin Fotografía
 
----
+Los siguientes combos no cuentan con fotografía oficial en formato y renderizan el fallback dinámico "FOTO AQUÍ":
+- `combo-6-manzanitas-chamoy-jumbo`
+- `combo-12-manzanitas-chamoy-jumbo`
 
-## Especificaciones de Fotografías Principales para Catálogo
+## Respaldo Original
 
-- **Proporción**: `4:5` vertical.
-- **Tamaño recomendado**: `1600 × 2000 px`.
-- **Tamaño mínimo aceptable**: `1200 × 1500 px`.
-- **Formato final para la web**: `WebP`.
-- **Peso recomendado**: `150 KB` a `350 KB`.
-- **Peso máximo permitido**: `500 KB`.
-- **Estilo**: Fondo y edición consistentes con la paleta de Zanita (`#F5EBDC` crema, `#F09CA9` rosa).
-- **Composición**: Producto centrado con suficiente espacio respirable alrededor.
-- **Restricción**: Sin texto, logotipos, marcas de agua, bordes ni precios integrados en la imagen original.
-
----
-
-## Fotografías Adicionales para Detalle (Futuras)
-
-- **Proporción**: `1:1` cuadrada.
-- **Tamaño recomendado**: `1600 × 1600 px`.
-- **Formato final para la web**: `WebP`.
-- **Peso máximo permitido**: `500 KB`.
-- **Nomenclatura**: `nombre-producto-02.webp`, `nombre-producto-03.webp`, etc.
-
----
-
-## Requisito Importante de Procesamiento Previo
-
-Si las fotografías originales del producto se entregan en formato `JPG`, `HEIC` o `PNG`, **NO deben subirse directamente al repositorio**.
-
-Antes de integrarlas:
-1. Se procesarán y recortarán según la proporción requerida (`4:5` o `1:1`).
-2. Se convertirán a formato `WebP` transparente u optimizado.
-3. Se optimizará su compresión para mantenerse dentro del peso máximo recomendado.
+**Importante:** Los archivos `.svg` pesados originales (de hasta 15MB cada uno) han sido retirados del repositorio y archivados de forma segura en Google Drive (fuera del directorio de código web) para no engrosar la historia de Git.

@@ -26,6 +26,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: true,
     colorAccent: '#4F7942',
+    photoSrc: '/products/manzanita-verde.webp',
   },
   {
     id: 'prod-2',
@@ -39,6 +40,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: true,
     colorAccent: '#87201D',
+    photoSrc: '/products/manzanita-roja-gala.webp',
   },
   {
     id: 'prod-3',
@@ -67,19 +69,6 @@ export const MOCK_PRODUCTS: Product[] = [
     colorAccent: '#87201D',
   },
   {
-    id: 'prod-5',
-    slug: 'charola-individual-2-toppings',
-    name: 'Charola Individual (2 Toppings)',
-    tagline: 'Charola individual con 2 toppings a elegir',
-    description: 'Charola individual con 2 toppings a elegir.',
-    price: 120,
-    category: 'charolas',
-    categoryLabel: 'Charolas Preparadas',
-    customizationNote: 'Opciones por confirmar',
-    featured: false,
-    colorAccent: '#8E4A56',
-  },
-  {
     id: 'prod-6',
     slug: 'charola-mediana-3-toppings',
     name: 'Charola Mediana (3 Toppings)',
@@ -91,6 +80,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: true,
     colorAccent: '#832709',
+    photoSrc: '/products/charola-mediana-3-toppings.webp',
   },
   {
     id: 'prod-7',
@@ -104,6 +94,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: false,
     colorAccent: '#D46240',
+    photoSrc: '/products/charola-grande-4-toppings.webp',
   },
   {
     id: 'prod-8',
@@ -117,6 +108,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: true,
     colorAccent: '#87201D',
+    photoSrc: '/products/charola-jumbo-6-toppings.webp',
   },
   {
     id: 'prod-9',
@@ -130,6 +122,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: false,
     colorAccent: '#4F7942',
+    photoSrc: '/products/mix-de-frutas.webp',
   },
   {
     id: 'prod-10',
@@ -143,6 +136,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: false,
     colorAccent: '#832709',
+    photoSrc: '/products/munxie-tacos-5-piezas.webp',
   },
   {
     id: 'prod-11',
@@ -156,6 +150,7 @@ export const MOCK_PRODUCTS: Product[] = [
     customizationNote: 'Opciones por confirmar',
     featured: true,
     colorAccent: '#87201D',
+    photoSrc: '/products/munxie-tacos-13-piezas.webp',
   },
   {
     id: 'prod-12',
@@ -163,11 +158,12 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Uvas Forradas',
     tagline: 'Uvas forradas',
     description: 'Uvas forradas.',
-    price: 80,
+    price: 90,
     category: 'uvas',
     categoryLabel: 'Uvas Preparadas',
     customizationNote: 'Opciones por confirmar',
     featured: true,
     colorAccent: '#8E4A56',
+    photoSrc: '/products/uvas-forradas.webp',
   },
 ];
