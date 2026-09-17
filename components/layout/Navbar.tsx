@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_CONFIG } from '@/config/site';
-import { Menu, X, MessageSquare } from 'lucide-react';
+import { Menu, X, MessageSquare, User } from 'lucide-react';
 
-export const Navbar: React.FC = () => {
+export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }> = ({ isLoggedIn, userRole }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
@@ -16,19 +16,21 @@ export const Navbar: React.FC = () => {
     { name: 'Zonas & Entregas', href: '/puntos-de-entrega' },
   ];
 
+  const authLinks = [
+    ...(userRole === 'admin' ? [{ name: 'Panel Admin', href: '/admin' }] : []),
+    ...(isLoggedIn ? [{ name: 'Mi Cuenta', href: '/mi-cuenta' }] : [{ name: 'Iniciar Sesión', href: '/iniciar-sesion' }])
+  ];
+
   return (
     <header className="sticky top-0 z-40 w-full bg-[#F5EBDC] border-b border-[#E4D5C1]">
-      {/* 1. Compact Top Banner */}
       <div className="bg-[#A73832] text-white text-center py-2 px-4 text-xs font-semibold tracking-wide">
         <p className="max-w-7xl mx-auto">
           Pedidos con 3 días de anticipación · Entregas programadas en Tijuana
         </p>
       </div>
 
-      {/* 2. Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Step 8: Logo horizontal increased to 180px */}
           <Link href="/" className="flex items-center group transition-opacity hover:opacity-90">
             <div className="relative w-44 sm:w-48 h-12">
               <Image
@@ -42,8 +44,7 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -53,9 +54,19 @@ export const Navbar: React.FC = () => {
                 {link.name}
               </Link>
             ))}
+            <div className="w-px h-4 bg-[#E4D5C1] mx-2"></div>
+            {authLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-xs font-bold uppercase tracking-wider text-[#A73832] hover:text-[#8e2e28] transition-colors py-2 flex items-center gap-1"
+              >
+                <User className="w-3.5 h-3.5" />
+                {link.name}
+              </Link>
+            ))}
           </nav>
 
-          {/* Step 3: Refined WhatsApp CTA - Cream/Transparent bg, Red border & text, small green icon accent */}
           <div className="hidden sm:flex items-center gap-4">
             <a
               href={SITE_CONFIG.whatsapp.urlWithMessage}
@@ -68,8 +79,12 @@ export const Navbar: React.FC = () => {
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex lg:hidden items-center">
+          <div className="flex lg:hidden items-center gap-2">
+            {!mobileMenuOpen && (
+              <Link href={isLoggedIn ? '/mi-cuenta' : '/iniciar-sesion'} className="p-2.5 rounded-md text-[#A73832] hover:bg-[#A73832]/10 transition-colors focus:outline-none">
+                <User className="w-6 h-6" />
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2.5 rounded-md text-[#A73832] hover:bg-[#A73832]/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#A73832]"
@@ -81,7 +96,6 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-[#E4D5C1] bg-[#F5EBDC] px-4 pt-4 pb-6 space-y-4 shadow-sm animate-in slide-in-from-top duration-200">
           <nav className="flex flex-col space-y-3">
@@ -92,6 +106,17 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-sm font-bold uppercase tracking-wider text-[#261C19] hover:text-[#A73832] py-2 border-b border-[#E4D5C1]/40"
               >
+                {link.name}
+              </Link>
+            ))}
+            {authLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-bold uppercase tracking-wider text-[#A73832] hover:text-[#8e2e28] py-2 border-b border-[#E4D5C1]/40 flex items-center gap-2"
+              >
+                <User className="w-4 h-4" />
                 {link.name}
               </Link>
             ))}
