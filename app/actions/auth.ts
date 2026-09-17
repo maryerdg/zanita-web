@@ -25,6 +25,10 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
     return { error: 'La contraseña debe tener al menos 6 caracteres' }
   }
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    return { error: 'Las cuentas aún no están disponibles en este preview.' }
+  }
+
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signUp({
@@ -58,6 +62,10 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
     return { error: 'Correo y contraseña obligatorios' }
   }
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    return { error: 'Las cuentas aún no están disponibles en este preview.' }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -83,6 +91,10 @@ export async function signOut(prevState: ActionState, formData: FormData): Promi
 export async function resetPasswordForEmail(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const email = formData.get('email') as string
   if (!email) return { error: 'Correo obligatorio' }
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    return { error: 'Las cuentas aún no están disponibles en este preview.' }
+  }
 
   const supabase = await createClient()
   const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
