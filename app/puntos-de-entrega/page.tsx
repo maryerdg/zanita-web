@@ -9,7 +9,7 @@ export default function PuntosDeEntregaPage() {
     'Las Palmas',
     'Hipódromo',
     'Las Ferias',
-    'CETYS',
+
     'Punto Medio',
   ];
 
@@ -85,10 +85,10 @@ export default function PuntosDeEntregaPage() {
             <div className="space-y-3 text-xs md:text-sm text-[#6E564F]">
               <p className="font-bold text-[#261C19] flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#A73832] shrink-0" />
-                <span>Único punto de pickup disponible: CETYS</span>
+                <span>Pickup Especial</span>
               </p>
               <p>
-                <strong>Horario:</strong> Lunes a viernes de 4:00 p.m. a 8:00 p.m. (después de las 4:00 p.m. únicamente aplica la opción de pickup en CETYS).
+                <strong>Horario:</strong> Disponible únicamente para clientes autorizados.
               </p>
               <div className="p-3.5 bg-[#FFF9F2] rounded-xl border border-[#E4D5C1] space-y-1 text-xs text-[#D46240]">
                 <div className="flex items-center gap-1.5 font-bold">
@@ -96,7 +96,7 @@ export default function PuntosDeEntregaPage() {
                   <span>Sin pickup gratuito</span>
                 </div>
                 <p className="leading-relaxed text-[#6E564F]">
-                  No existe modalidad de pickup gratuito en ningún punto (incluyendo CETYS). El costo o condición específica de la recolección en CETYS está pendiente de confirmación formal por la marca.
+                  Las ubicaciones, costos y horarios precisos de recolección especial se reflejarán directamente durante el checkout para las cuentas habilitadas.
                 </p>
               </div>
             </div>
@@ -115,7 +115,7 @@ export default function PuntosDeEntregaPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#D46240] shrink-0 mt-1.5" />
-                <span><strong>Lunes a viernes (después de las 4:00 p.m.):</strong> Únicamente pickup en CETYS (4:00 p.m. a 8:00 p.m.).</span>
+                <span><strong>Lunes a viernes (después de las 4:00 p.m.):</strong> Puntos de entrega especiales disponibles para clientes autorizados.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#4F7942] shrink-0 mt-1.5" />

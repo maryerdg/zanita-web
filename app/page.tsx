@@ -320,9 +320,9 @@ export default function HomePage() {
                 <Clock className="w-3.5 h-3.5 md:w-5 md:h-5" />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Pickup en CETYS</h3>
+                <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Pickup Especial</h3>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Único punto de recolección en CETYS de lunes a viernes de 4:00 p.m. a 8:00 p.m. Condición o costo de pickup sujeto a confirmación.
+                Puntos de entrega especiales disponibles únicamente para clientes autorizados.
                 </p>
               </div>
             </div>

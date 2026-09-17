@@ -1,20 +1,43 @@
 import { createClient } from '@/app/actions/supabase-server'
 import { redirect } from 'next/navigation'
-import AdminClient from './client-page'
+import AdminClientPage from './client-page'
 
-export default async function AdminPanel() {
+export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/iniciar-sesion')
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  if (profile?.role !== 'admin') redirect('/mi-cuenta')
+  if (!user) {
+    redirect('/iniciar-sesion')
+  }
 
-  const { data: reqs } = await supabase
-    .from('cetys_access_requests')
-    .select('*, profiles!cetys_access_requests_user_id_fkey(full_name, phone, email)')
-    .eq('status', 'pending')
-    .order('requested_at', { ascending: true })
+  // Server-side authorization check
+  const { data: adminProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
 
-  return <AdminClient initialRequests={reqs || []} />
+  if (!adminProfile || adminProfile.role !== 'admin') {
+    redirect('/mi-cuenta')
+  }
+
+  // Fetch all customers for admin dashboard
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'customer')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error loading profiles:', error)
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FFFBF8] pt-32 pb-16">
+      <div className="max-w-4xl mx-auto px-6">
+        <h1 className="text-3xl font-serif text-[#6E564F] mb-8">Panel de Administración</h1>
+        <AdminClientPage profiles={profiles || []} />
+      </div>
+    </div>
+  )
 }

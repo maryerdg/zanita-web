@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
                 <span>Entregas & Pickup</span>
               </div>
               <p className="text-xs text-[#6E564F]">
-                Entregas en zonas oficiales (+$30 MXN) y pickup exclusivo en CETYS.
+                Entregas en zonas oficiales (+$30 MXN). Puntos de entrega especiales disponibles para clientes autorizados.
               </p>
             </div>
           </div>
