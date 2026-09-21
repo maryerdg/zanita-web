@@ -1,39 +1,45 @@
+import { getSiteUrl } from '@/lib/utils/url'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import type { EmailOtpType } from '@supabase/supabase-js'
 
-const ALLOWED_NEXT_ROUTES = ['/mi-cuenta', '/actualizar-contrasena'];
+const ALLOWED_NEXT_ROUTES = ['/mi-cuenta', '/actualizar-contrasena']
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+
+  const token_hash = searchParams.get('token_hash')
+  const type = searchParams.get('type') as EmailOtpType | null
   const code = searchParams.get('code')
+
   let next = searchParams.get('next') ?? '/mi-cuenta'
-  
+
   if (!ALLOWED_NEXT_ROUTES.includes(next)) {
-    next = '/mi-cuenta';
+    next = '/mi-cuenta'
   }
 
-  if (code) {
-    const cookieStore = await cookies()
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {}
-        },
-      },
-    })
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+  if ((token_hash && type) || code) {
+    const supabase = await createClient()
+
+    if (token_hash && type) {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash,
+        type,
+      })
+
+      if (!error) {
+        return NextResponse.redirect(`${getSiteUrl()}${next}`)
+      }
+    } else if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+      if (!error) {
+        return NextResponse.redirect(`${getSiteUrl()}${next}`)
+      }
     }
   }
 
-  return NextResponse.redirect(`${origin}/iniciar-sesion?error=Enlace+inválido+o+expirado`)
+  return NextResponse.redirect(
+    `${getSiteUrl()}/iniciar-sesion?error=Enlace+inválido+o+expirado`
+  )
 }

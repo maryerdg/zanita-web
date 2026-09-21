@@ -1,4 +1,6 @@
+
 'use server'
+import { getSiteUrl } from "@/lib/utils/url"
 
 import { createClient } from './supabase-server'
 import { revalidatePath } from 'next/cache'
@@ -35,6 +37,7 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
     email,
     password,
     options: {
+        emailRedirectTo: `${getSiteUrl()}/auth/callback?next=/mi-cuenta`,
       data: {
         full_name,
         phone,
@@ -97,10 +100,10 @@ export async function resetPasswordForEmail(prevState: ActionState, formData: Fo
   }
 
   const supabase = await createClient()
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  
+
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/actualizar-contrasena`,
+    redirectTo: `${getSiteUrl()}/auth/callback?next=/actualizar-contrasena`,
   })
 
   if (error) {
@@ -119,7 +122,7 @@ export async function updatePassword(prevState: ActionState, formData: FormData)
   if (password.length < 6) return { error: 'Mínimo 6 caracteres' }
 
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Sesión inválida' }
 

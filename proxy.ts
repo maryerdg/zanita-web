@@ -38,7 +38,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isProtectedPath = request.nextUrl.pathname.startsWith('/mi-cuenta') || request.nextUrl.pathname.startsWith('/admin')
+  const isProtectedPath = request.nextUrl.pathname.startsWith('/mi-cuenta') || request.nextUrl.pathname.startsWith('/admin') || request.nextUrl.pathname.startsWith('/actualizar-contrasena')
   const isAuthPath = request.nextUrl.pathname.startsWith('/iniciar-sesion') || request.nextUrl.pathname.startsWith('/registro') || request.nextUrl.pathname.startsWith('/recuperar-contrasena')
 
   if (!user && isProtectedPath) {
