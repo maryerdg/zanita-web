@@ -6,7 +6,7 @@ import { createClient } from './supabase-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-export type ActionState = { error?: string; success?: string } | null;
+export type ActionState = { error?: string; success?: string; email?: string } | null;
 
 export async function signUp(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const email = formData.get('email') as string
@@ -14,9 +14,14 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
   const confirmPassword = formData.get('confirmPassword') as string
   const full_name = formData.get('full_name') as string
   const phone = formData.get('phone') as string
+  const legal_acceptance = formData.get('legal_acceptance')
 
   if (!email || !password || !confirmPassword || !full_name || !phone) {
     return { error: 'Todos los campos son obligatorios' }
+  }
+
+  if (!legal_acceptance) {
+    return { error: 'Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para crear tu cuenta.' }
   }
 
   if (password !== confirmPassword) {
@@ -46,6 +51,9 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
   })
 
   if (error) {
+    if (error.message.includes('rate limit')) {
+      return { error: 'Demasiados intentos. Por favor intenta de nuevo más tarde.' }
+    }
     return { error: error.message }
   }
 
@@ -53,8 +61,33 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
     revalidatePath('/', 'layout')
     redirect('/mi-cuenta')
   } else {
-    return { success: 'Revisa tu correo para confirmar tu cuenta' }
+    return { success: 'Revisa tu correo para confirmar tu cuenta', email }
   }
+}
+
+export async function resendConfirmation(prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const email = formData.get('email') as string
+
+  if (!email) {
+    return { error: 'Falta el correo electrónico' }
+  }
+
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: {
+      emailRedirectTo: `${getSiteUrl()}/auth/callback?next=/mi-cuenta`,
+    }
+  })
+
+  if (error && error.message.includes('rate limit')) {
+    return { error: 'Demasiados intentos. Por favor intenta de nuevo más tarde.', email }
+  }
+
+  // Generic success to prevent enumeration, passing back the email so the UI keeps it
+  return { success: 'Si la cuenta está pendiente de confirmación, te enviamos un nuevo correo.', email }
 }
 
 export async function signIn(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -77,7 +110,16 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
   })
 
   if (error) {
-    return { error: 'Credenciales inválidas' }
+    if (error.message.includes('Email not confirmed')) {
+      return { error: 'Confirma tu correo electrónico antes de iniciar sesión.' }
+    }
+    if (error.message.includes('Invalid login credentials')) {
+      return { error: 'Correo o contraseña incorrectos.' }
+    }
+    if (error.message.includes('rate limit')) {
+      return { error: 'Demasiados intentos. Por favor intenta de nuevo más tarde.' }
+    }
+    return { error: 'Correo o contraseña incorrectos.' }
   }
 
   revalidatePath('/', 'layout')
