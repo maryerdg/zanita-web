@@ -1,18 +1,17 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
-import { SITE_CONFIG } from '@/config/site';
 import { MOCK_PRODUCTS } from '@/data/products';
 import { ProductCard } from '@/components/store/ProductCard';
-import { ArrowLeft, MessageSquare, Clock, MapPin, Sparkles } from 'lucide-react';
+import { AddToCartControls } from '@/components/store/AddToCartControls';
+import { ArrowLeft, Clock, MapPin, Sparkles } from 'lucide-react';
 
-export default function ProductDetailPage() {
-  const params = useParams();
-  const slug = params?.slug as string;
+type ProductDetailPageProps = {
+  params: Promise<{ slug: string }>;
+};
 
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const { slug } = await params;
   const product = MOCK_PRODUCTS.find((p) => p.slug === slug);
 
   if (!product) {
@@ -137,18 +136,8 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* WhatsApp Primary Order CTA */}
-          <div className="pt-2">
-            <a
-              href={`${SITE_CONFIG.whatsapp.url}?text=Hola%20Zanita%2C%20quiero%20hacer%20un%20pedido%20de%20${encodeURIComponent(product.name)}.`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-md border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-all text-xs font-bold uppercase tracking-wider shadow-2xs"
-            >
-              <MessageSquare className="w-4.5 h-4.5 fill-current text-[#4F7942]" />
-              <span>Pedir {product.name} por WhatsApp</span>
-            </a>
-          </div>
+          {/* Add to Cart Actions */}
+          <AddToCartControls product={product} />
         </div>
       </div>
 

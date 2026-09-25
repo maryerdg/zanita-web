@@ -5,6 +5,8 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { createClient } from '@/app/actions/supabase-server';
 
+import { CartProvider } from '@/contexts/CartContext';
+
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '600', '700'],
@@ -63,9 +65,11 @@ export default async function RootLayout({
       className={`${cormorant.variable} ${birthstone.variable} ${manrope.variable}`}
     >
       <body className="min-h-screen flex flex-col bg-[#F5EBDC] text-[#261C19] antialiased selection:bg-[#F09CA9] selection:text-[#A73832]">
-        <Navbar isLoggedIn={!!user} userRole={role} />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <CartProvider>
+          <Navbar isLoggedIn={!!user} userRole={role} />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );

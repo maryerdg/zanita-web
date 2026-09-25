@@ -4,8 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/data/products';
-import { SITE_CONFIG } from '@/config/site';
-import { ArrowRight, MessageSquare } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -65,20 +64,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, photoSrc }) =
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <a
-              href={`${SITE_CONFIG.whatsapp.url}?text=Hola%20Zanita%2C%20quiero%20informaci%C3%B3n%20sobre%20el%20producto%20${encodeURIComponent(product.name)}.`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:inline-flex p-2.5 rounded-full border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-colors"
-              title="Pedir por WhatsApp"
-              aria-label={`Pedir ${product.name} por WhatsApp`}
-            >
-              <MessageSquare className="w-3.5 h-3.5 fill-current text-[#4F7942]" />
-            </a>
-
             <Link
               href={`/productos/${product.slug}`}
-              className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 lg:py-2 min-h-[32px] sm:min-h-[36px] lg:min-h-[40px] text-[9px] sm:text-[10px] lg:text-xs font-bold uppercase tracking-wide sm:tracking-wider rounded-md bg-[#A73832] text-white hover:bg-[#8e2e28] transition-colors"
+              className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 lg:py-2 min-h-[32px] sm:min-h-[36px] lg:min-h-[40px] text-[9px] sm:text-[10px] lg:text-xs font-bold uppercase tracking-wide sm:tracking-wider rounded-md bg-[#A73832] text-white hover:bg-[#8e2e28] transition-colors w-full justify-center"
               aria-label={`Ver ${product.name}`}
             >
               <span>Ver</span>

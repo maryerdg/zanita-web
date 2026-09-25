@@ -1,13 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_CONFIG } from '@/config/site';
-import { Menu, X, MessageSquare, User } from 'lucide-react';
+import { Menu, X, MessageSquare, User, ShoppingBag } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
 
 export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }> = ({ isLoggedIn, userRole }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { itemCount, isHydrated } = useCart();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line
+    setMounted(true);
+  }, []);
 
   const navLinks = [
     { name: 'Inicio', href: '/' },
@@ -20,6 +28,8 @@ export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }
     ...(userRole === 'admin' ? [{ name: 'Panel Admin', href: '/admin' }] : []),
     ...(isLoggedIn ? [{ name: 'Mi Cuenta', href: '/mi-cuenta' }] : [{ name: 'Iniciar Sesión', href: '/iniciar-sesion' }])
   ];
+
+  const showBadge = mounted && isHydrated && itemCount > 0;
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#F5EBDC] border-b border-[#E4D5C1]">
@@ -65,9 +75,23 @@ export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }
                 {link.name}
               </Link>
             ))}
+            <Link
+              href="/carrito"
+              className="relative p-2 text-[#A73832] hover:text-[#8e2e28] transition-colors flex items-center"
+              aria-label="Ver carrito"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {showBadge && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-[#D46240] rounded-full min-w-[1.25rem]">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
           </nav>
 
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-4 lg:hidden">
+            {/* Desktop-only view of WhatsApp is hidden on LG where it gets cluttered, replaced by cart */}
+            {/* Wait, the prompt says "Revisar si el CTA grande de WhatsApp en desktop compite... No eliminar WhatsApp automáticamente. Acomodar jerarquía". */}
             <a
               href={SITE_CONFIG.whatsapp.urlWithMessage}
               target="_blank"
@@ -75,11 +99,37 @@ export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-all text-xs font-bold shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#A73832]/40"
             >
               <MessageSquare className="w-3.5 h-3.5 fill-current text-[#4F7942] group-hover:text-[#F5EBDC]" />
-              <span>Contactar por WhatsApp</span>
+              <span className="hidden xl:inline">Contactar por WhatsApp</span>
+              <span className="xl:hidden">WhatsApp</span>
+            </a>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-4">
+             <a
+              href={SITE_CONFIG.whatsapp.urlWithMessage}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-all text-xs font-bold shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#A73832]/40"
+            >
+              <MessageSquare className="w-3.5 h-3.5 fill-current text-[#4F7942] group-hover:text-[#F5EBDC]" />
+              <span className="hidden xl:inline">Contactar por WhatsApp</span>
+              <span className="xl:hidden">WhatsApp</span>
             </a>
           </div>
 
           <div className="flex lg:hidden items-center gap-2">
+            <Link
+              href="/carrito"
+              className="relative p-2.5 rounded-md text-[#A73832] hover:bg-[#A73832]/10 transition-colors focus:outline-none"
+              aria-label="Ver carrito"
+            >
+              <ShoppingBag className="w-6 h-6" />
+              {showBadge && (
+                <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-[#D46240] rounded-full min-w-[1.25rem]">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
             {!mobileMenuOpen && (
               <Link href={isLoggedIn ? '/mi-cuenta' : '/iniciar-sesion'} className="p-2.5 rounded-md text-[#A73832] hover:bg-[#A73832]/10 transition-colors focus:outline-none">
                 <User className="w-6 h-6" />
