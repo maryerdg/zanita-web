@@ -1,10 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MOCK_PRODUCTS } from '@/data/products';
+import { getProductBySlug, getProducts } from '@/lib/catalog';
 import { ProductCard } from '@/components/store/ProductCard';
 import { AddToCartControls } from '@/components/store/AddToCartControls';
 import { ArrowLeft, Clock, MapPin, Sparkles } from 'lucide-react';
+
+export const revalidate = 0;
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -12,7 +14,8 @@ type ProductDetailPageProps = {
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { slug } = await params;
-  const product = MOCK_PRODUCTS.find((p) => p.slug === slug);
+
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     return (
@@ -30,13 +33,17 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     );
   }
 
-  const relatedProducts = MOCK_PRODUCTS.filter(
+  const allProducts = await getProducts();
+  const relatedProducts = allProducts.filter(
     (p) => p.id !== product.id && p.category === product.category
   ).slice(0, 3);
 
   const fallbackRelated = relatedProducts.length > 0
     ? relatedProducts
-    : MOCK_PRODUCTS.filter((p) => p.id !== product.id).slice(0, 3);
+    : allProducts.filter((p) => p.id !== product.id).slice(0, 3);
+
+  // Determinar si el producto tiene grupos de opciones obligatorios
+  const requiresCustomization = product.optionGroups.some(g => g.isRequired);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
@@ -109,7 +116,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </div>
             <div className="text-right text-xs text-[#6E564F]">
               <span className="block font-semibold">Tijuana, B.C.</span>
-              <span>Pedidos con 3 días de anticipación</span>
+              <span>Pedidos con mínimo 24 horas de anticipación</span>
             </div>
           </div>
 
@@ -118,10 +125,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             <div className="p-4 rounded-xl bg-white border border-[#E4D5C1] space-y-2">
               <div className="flex items-center gap-2 text-[#A73832] font-bold text-xs">
                 <Clock className="w-4 h-4" />
-                <span>3 Días de Anticipación</span>
+                <span>24 Horas de Anticipación</span>
               </div>
               <p className="text-xs text-[#6E564F]">
-                Se requiere solicitar con mínimo 3 días para organizar la producción.
+                Se requiere realizar el pedido con al menos 24 horas de anticipación para organizar la producción.
               </p>
             </div>
 
@@ -137,7 +144,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </div>
 
           {/* Add to Cart Actions */}
-          <AddToCartControls product={product} />
+          <AddToCartControls product={product} requiresCustomization={requiresCustomization} />
         </div>
       </div>
 

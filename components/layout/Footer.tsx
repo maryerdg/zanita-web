@@ -149,7 +149,7 @@ export const Footer: React.FC = () => {
           {/* Footer Bottom Rights Bar */}
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-[#F09CA9] gap-2">
             <p>© {new Date().getFullYear()} Zanita. Todos los derechos reservados.</p>
-            <p>Tijuana, B.C. • Pedidos con 3 días de anticipación</p>
+            <p>Tijuana, B.C. • Pedidos con mínimo 24 horas de anticipación</p>
           </div>
         </div>
       </div>

@@ -2,18 +2,19 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_CONFIG } from '@/config/site';
-import { MOCK_PRODUCTS } from '@/data/products';
+import { getProducts, CatalogProduct } from "@/lib/catalog";
 import { ProductCard } from '@/components/store/ProductCard';
 import { ArrowRight, MessageSquare, Clock, MapPin, Calendar, Sparkles } from 'lucide-react';
 
-export default function HomePage() {
+export default async function HomePage() {
   const FEATURED_SLUGS = [
     'manzanita-verde',
     'charola-grande-4-toppings',
     'mix-de-frutas',
     'uvas-forradas'
   ];
-  const featuredProducts = FEATURED_SLUGS.map(slug => MOCK_PRODUCTS.find(p => p.slug === slug)).filter(Boolean) as typeof MOCK_PRODUCTS;
+  const allProducts = await getProducts();
+  const featuredProducts = FEATURED_SLUGS.map(slug => allProducts.find(p => p.slug === slug)).filter(Boolean) as CatalogProduct[];
 
   const categories = [
     {
@@ -109,7 +110,7 @@ export default function HomePage() {
               {/* Trust Badges */}
               <div className="grid grid-cols-3 gap-1 sm:gap-4 pt-4 sm:pt-6 lg:pt-8 border-t border-[#E4D5C1]/70 max-w-md lg:max-w-lg mx-auto lg:mx-0">
                 <div className="text-center lg:text-left">
-                  <span className="block font-serif font-bold text-sm sm:text-base lg:text-xl text-[#A73832]">3 Días</span>
+                  <span className="block font-serif font-bold text-sm sm:text-base lg:text-xl text-[#A73832]">24 Horas</span>
                   <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#6E564F]">Anticipación</span>
                 </div>
                 <div className="text-center lg:text-left">
@@ -297,9 +298,9 @@ export default function HomePage() {
               <div className="w-7 h-7 md:w-10 md:h-10 shrink-0 rounded-full bg-[#A73832]/10 text-[#A73832] flex items-center justify-center">
                 <Calendar className="w-3.5 h-3.5 md:w-5 md:h-5" />
               </div>
-              <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">3 Días de Anticipación</h3>
+              <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">24 Horas de Anticipación</h3>
               <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Todos los pedidos requieren solicitarse con un mínimo de 3 días de anticipación para organizar la producción.
+                Todos los pedidos requieren solicitarse con un mínimo de 24 horas de anticipación para organizar la producción.
               </p>
             </div>
 

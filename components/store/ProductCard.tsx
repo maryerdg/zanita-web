@@ -3,11 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Product } from '@/data/products';
+import { CatalogProduct } from '@/lib/catalog';
 import { ArrowRight } from 'lucide-react';
 
 interface ProductCardProps {
-  product: Product;
+  product: CatalogProduct;
   photoSrc?: string;
 }
 

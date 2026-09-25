@@ -7,16 +7,11 @@ import { useCart } from '@/contexts/CartContext';
 import { SITE_CONFIG } from '@/config/site';
 
 interface AddToCartControlsProps {
-  product: {
-    id: string;
-    slug: string;
-    name: string;
-    price: number;
-    photoSrc?: string;
-  };
+  product: { id: string; slug: string; name: string; price: number; photoSrc?: string | null; };
+  requiresCustomization?: boolean;
 }
 
-export function AddToCartControls({ product }: AddToCartControlsProps) {
+export function AddToCartControls({ product, requiresCustomization = false }: AddToCartControlsProps) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -28,7 +23,7 @@ export function AddToCartControls({ product }: AddToCartControlsProps) {
       name: product.name,
       unitPrice: product.price,
       quantity,
-      photoSrc: product.photoSrc
+      photoSrc: product.photoSrc || undefined
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 2500);
@@ -62,13 +57,17 @@ export function AddToCartControls({ product }: AddToCartControlsProps) {
         {/* Primary Add CTA */}
         <button
           onClick={handleAddToCart}
-          disabled={justAdded}
+          disabled={justAdded || requiresCustomization}
           className={`flex-1 inline-flex items-center justify-center gap-3 px-8 py-4 rounded-md text-white transition-all text-xs font-bold uppercase tracking-wider shadow-2xs ${
-            justAdded ? 'bg-[#4F7942]' : 'bg-[#A73832] hover:bg-[#8e2e28]'
+            requiresCustomization
+              ? 'bg-[#E4D5C1] cursor-not-allowed text-[#6E564F]'
+              : justAdded ? 'bg-[#4F7942]' : 'bg-[#A73832] hover:bg-[#8e2e28]'
           }`}
           aria-label={`Agregar ${product.name} al carrito`}
         >
-          {justAdded ? (
+          {requiresCustomization ? (
+            <span>Próximamente</span>
+          ) : justAdded ? (
             <>
               <Check className="w-4.5 h-4.5" />
               <span>¡Agregado al carrito!</span>
@@ -81,6 +80,12 @@ export function AddToCartControls({ product }: AddToCartControlsProps) {
           )}
         </button>
       </div>
+      {requiresCustomization && (
+        <div className="text-center p-3 bg-[#F5EBDC] border border-[#E4D5C1] rounded-md">
+          <p className="text-xs text-[#A73832] font-bold">Personalización disponible en el siguiente paso.</p>
+        </div>
+      )}
+
 
       {/* Secondary Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#E4D5C1]">

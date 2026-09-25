@@ -35,7 +35,7 @@ export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }
     <header className="sticky top-0 z-40 w-full bg-[#F5EBDC] border-b border-[#E4D5C1]">
       <div className="bg-[#A73832] text-white text-center py-2 px-4 text-xs font-semibold tracking-wide">
         <p className="max-w-7xl mx-auto">
-          Pedidos con 3 días de anticipación · Entregas programadas en Tijuana
+          Pedidos con mínimo 24 horas de anticipación · Entregas programadas en Tijuana
         </p>
       </div>
 

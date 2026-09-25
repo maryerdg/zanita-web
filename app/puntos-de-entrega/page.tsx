@@ -47,7 +47,7 @@ export default async function DeliveryPointsPage() {
             <span>Regla de Anticipación</span>
           </div>
           <p className="text-sm md:text-base font-serif font-bold text-[#261C19]">
-            Todos los pedidos requieren solicitarse con 3 días de anticipación.
+            Todos los pedidos requieren solicitarse con al menos 24 horas de anticipación.
           </p>
         </div>
         <div className="md:w-3/5">
