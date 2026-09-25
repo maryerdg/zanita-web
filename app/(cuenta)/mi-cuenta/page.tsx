@@ -17,5 +17,5 @@ export default async function MiCuentaPage() {
     .eq('id', user.id)
     .single()
 
-  return <MiCuentaClient user={user} profile={profile} />
+  return <MiCuentaClient profile={profile} />
 }
