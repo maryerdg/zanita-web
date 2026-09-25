@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
                 <span>Entregas & Pickup</span>
               </div>
               <p className="text-xs text-[#6E564F]">
-                Entregas en zonas oficiales (+$30 MXN). Puntos de entrega especiales disponibles para clientes autorizados.
+                Consulta los puntos y opciones disponibles al finalizar tu pedido.
               </p>
             </div>
           </div>

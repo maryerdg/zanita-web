@@ -1,31 +1,41 @@
-import React from 'react';
+import { Calendar, MapPin, CheckCircle2, MessageSquare } from 'lucide-react';
 import { SITE_CONFIG } from '@/config/site';
-import { MapPin, Clock, Calendar, AlertCircle, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
 
-export default function PuntosDeEntregaPage() {
-  const officialZones = [
-    'Alba Roja',
-    'Ermita',
-    'Las Palmas',
-    'Hipódromo',
-    'Las Ferias',
+const officialZones = [
+  'Alba Roja',
+  'Ermita',
+  'Las Palmas',
+  'Hipódromo',
+  'Las Ferias',
+  'Punto Medio'
+];
 
-    'Punto Medio',
-  ];
+export default async function DeliveryPointsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let cetysPickupEnabled = false;
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('cetys_pickup_enabled')
+      .eq('id', user.id)
+      .single();
+    if (profile?.cetys_pickup_enabled) {
+      cetysPickupEnabled = true;
+    }
+  }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-      {/* Header */}
-      <div className="text-center space-y-4 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F09CA9]/30 text-[#A73832] text-xs font-bold uppercase tracking-wider border border-[#F09CA9]/50 shadow-2xs">
-          <MapPin className="w-3.5 h-3.5" />
-          <span>Cobertura & Entregas en Tijuana</span>
-        </div>
-        <h1 className="font-serif font-bold text-4xl sm:text-5xl text-[#261C19]">
-          Zonas y Modalidades de Entrega
+    <div className="max-w-4xl mx-auto px-6 py-24 space-y-12">
+      {/* Page Header */}
+      <div className="text-center space-y-4">
+        <h1 className="font-serif font-bold text-3xl md:text-5xl text-[#261C19]">
+          Entregas & Ubicaciones
         </h1>
-        <p className="text-sm md:text-base text-[#6E564F] leading-relaxed">
-          Consulta la información sobre nuestras zonas de entrega a domicilio, horarios y la condición del punto de recolección (pickup).
+        <p className="text-sm md:text-base text-[#6E564F] max-w-2xl mx-auto leading-relaxed">
+          Consulta la información sobre nuestros puntos oficiales de entrega, horarios y posibilidades de cotizar envíos a otras ubicaciones. Ten en cuenta que algunas opciones pueden variar según tu cuenta.
         </p>
       </div>
 
@@ -47,14 +57,9 @@ export default function PuntosDeEntregaPage() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         {/* Official Delivery Zones */}
         <div className="md:col-span-6 bg-[#FFF9F2] p-6 md:p-8 rounded-2xl border border-[#E4D5C1] space-y-6 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-[#E4D5C1] pb-4">
-            <div>
-              <h2 className="font-serif font-bold text-xl text-[#261C19]">Zonas Oficiales ($30 MXN Extra)</h2>
-              <p className="text-xs text-[#6E564F]">Entrega a domicilio dentro de estas zonas:</p>
-            </div>
-            <span className="font-serif font-bold text-xs text-[#A73832] bg-[#A73832]/10 px-3 py-1 rounded-full whitespace-nowrap border border-[#A73832]/20">
-              +$30 MXN
-            </span>
+          <div className="border-b border-[#E4D5C1] pb-4">
+            <h2 className="font-serif font-bold text-xl text-[#261C19]">Puntos oficiales de entrega</h2>
+            <p className="text-xs text-[#6E564F] mt-1">Selecciona uno de nuestros puntos disponibles al finalizar tu pedido.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm font-semibold text-[#261C19]">
@@ -67,7 +72,7 @@ export default function PuntosDeEntregaPage() {
           </div>
 
           <div className="pt-4 border-t border-[#E4D5C1] space-y-2">
-            <h3 className="font-serif font-bold text-sm text-[#D46240]">Otras Zonas de Tijuana</h3>
+            <h3 className="font-serif font-bold text-sm text-[#D46240]">Otras ubicaciones</h3>
             <p className="text-xs text-[#6E564F] leading-relaxed">
               Las entregas en ubicaciones fuera del listado oficial requieren cotización de envío, la cual oscila entre <strong>$50 MXN y $100 MXN</strong> según la distancia.
             </p>
@@ -76,50 +81,40 @@ export default function PuntosDeEntregaPage() {
 
         {/* Schedule & Pickup Rules */}
         <div className="md:col-span-6 space-y-6">
-          {/* Pickup Block */}
-          <div className="bg-white p-6 rounded-2xl border border-[#E4D5C1] space-y-4 shadow-2xs">
-            <div className="flex items-center gap-2 text-[#A73832] font-serif font-bold text-lg">
-              <Clock className="w-5 h-5" />
-              <h2>Recolección Presencial (Pickup)</h2>
-            </div>
-            <div className="space-y-3 text-xs md:text-sm text-[#6E564F]">
-              <p className="font-bold text-[#261C19] flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#A73832] shrink-0" />
-                <span>Pickup Especial</span>
-              </p>
-              <p>
-                <strong>Horario:</strong> Disponible únicamente para clientes autorizados.
-              </p>
-              <div className="p-3.5 bg-[#FFF9F2] rounded-xl border border-[#E4D5C1] space-y-1 text-xs text-[#D46240]">
-                <div className="flex items-center gap-1.5 font-bold">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-[#A73832]" />
-                  <span>Sin pickup gratuito</span>
-                </div>
-                <p className="leading-relaxed text-[#6E564F]">
-                  Las ubicaciones, costos y horarios precisos de recolección especial se reflejarán directamente durante el checkout para las cuentas habilitadas.
+          {/* Pickup CETYS - ONLY VISIBLE IF cetys_pickup_enabled is true */}
+          {cetysPickupEnabled && (
+            <div className="bg-white p-6 rounded-2xl border border-[#E4D5C1] space-y-4 shadow-2xs">
+              <div className="flex items-center gap-2 text-[#A73832] font-serif font-bold text-lg">
+                <MapPin className="w-5 h-5" />
+                <h2>Pickup CETYS</h2>
+              </div>
+              <div className="space-y-3 text-xs md:text-sm text-[#6E564F]">
+                <p>
+                  <strong>Disponible de lunes a viernes, de 4:00 p.m. a 8:00 p.m.</strong>
                 </p>
+                <div className="p-3.5 bg-[#FFF9F2] rounded-xl border border-[#E4D5C1] space-y-1 text-xs text-[#D46240]">
+                  <p className="leading-relaxed text-[#6E564F]">
+                    Esta opción estará disponible al finalizar tu pedido.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Delivery Schedule Block */}
           <div className="bg-white p-6 rounded-2xl border border-[#E4D5C1] space-y-4 shadow-2xs">
             <div className="flex items-center gap-2 text-[#D46240] font-serif font-bold text-lg">
               <Calendar className="w-5 h-5" />
-              <h2>Horarios de Entrega a Domicilio</h2>
+              <h2>Horarios y modalidades de entrega</h2>
             </div>
             <ul className="space-y-3 text-xs md:text-sm text-[#6E564F]">
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#A73832] shrink-0 mt-1.5" />
-                <span><strong>Lunes a viernes (antes de las 2:00 p.m.):</strong> Entregas a domicilio en zonas disponibles.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#D46240] shrink-0 mt-1.5" />
-                <span><strong>Lunes a viernes (después de las 4:00 p.m.):</strong> Puntos de entrega especiales disponibles para clientes autorizados.</span>
+                <span><strong>Lunes a viernes (antes de las 2:00 p.m.):</strong> Entregas programadas en los puntos oficiales disponibles.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#4F7942] shrink-0 mt-1.5" />
-                <span><strong>Sábados y domingos:</strong> Entregas programadas bajo agenda.</span>
+                <span><strong>Sábados y domingos:</strong> Entregas programadas bajo agenda y disponibilidad.</span>
               </li>
             </ul>
           </div>
