@@ -83,11 +83,11 @@ export async function resendConfirmation(prevState: ActionState, formData: FormD
   })
 
   if (error && error.message.includes('rate limit')) {
-    return { error: 'Demasiados intentos. Por favor intenta de nuevo más tarde.', email }
+    return { error: 'Espera un momento antes de solicitar otro correo.', email }
   }
 
   // Generic success to prevent enumeration, passing back the email so the UI keeps it
-  return { success: 'Si la cuenta está pendiente de confirmación, te enviamos un nuevo correo.', email }
+  return { success: 'Te enviamos un nuevo correo de confirmación. Revisa tu bandeja de entrada.', email }
 }
 
 export async function signIn(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -111,7 +111,7 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
 
   if (error) {
     if (error.message.includes('Email not confirmed')) {
-      return { error: 'Confirma tu correo electrónico antes de iniciar sesión.' }
+      return { error: 'Confirma tu correo electrónico antes de iniciar sesión.', email }
     }
     if (error.message.includes('Invalid login credentials')) {
       return { error: 'Correo o contraseña incorrectos.' }
