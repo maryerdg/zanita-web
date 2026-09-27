@@ -4,7 +4,105 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
+import type { CartSelectedOption } from '@/contexts/CartContext';
+import { calculateGroupExtraSummary } from '@/lib/catalog/pricing';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+
+// ---------------------------------------------------------------------------
+// Selected options summary (shown under each cart line)
+// ---------------------------------------------------------------------------
+
+function SelectedOptionsSummary({ options }: { options: CartSelectedOption[] }) {
+  if (!options || options.length === 0) return null;
+
+  // Group by groupName for display
+  const byGroup = new Map<string, CartSelectedOption[]>();
+  for (const opt of options) {
+    const existing = byGroup.get(opt.groupName) ?? [];
+    existing.push(opt);
+    byGroup.set(opt.groupName, existing);
+  }
+
+  return (
+    <div className="mt-2 space-y-2">
+      {Array.from(byGroup.entries()).map(([groupName, opts]) => {
+        const includedCount = opts[0]?.groupIncludedSelections ?? 0;
+        const hasIncluded   = includedCount > 0;
+
+        if (hasIncluded) {
+          // Included toppings group (e.g. Charolas / Mix)
+          const summary    = calculateGroupExtraSummary(includedCount, opts);
+          const normalOpts = opts.filter(o => !o.alwaysCharge);
+
+          return (
+            <div key={groupName} className="space-y-1">
+              <div>
+                <p className="text-[11px] font-bold text-[#6E564F] uppercase tracking-wider">{groupName}:</p>
+                <ul className="mt-0.5 space-y-0.5">
+                  {normalOpts.map(opt => (
+                    <li key={opt.optionId} className="flex items-center gap-1.5 text-xs text-[#6E564F]">
+                      <span className="text-[#A73832]">•</span>
+                      <span className="font-medium text-[#261C19]">{opt.optionName}</span>
+                      <span className="text-[#6E564F]">×{opt.quantity}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {(summary.normalExtraQuantity > 0 || summary.premiumCharges.length > 0) && (
+                <div className="pt-0.5">
+                  <p className="text-[11px] font-bold text-[#A73832] uppercase tracking-wider">EXTRAS:</p>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {summary.normalExtraQuantity > 0 && (
+                      <li className="flex items-center gap-1.5 text-xs text-[#6E564F]">
+                        <span className="text-[#A73832]">•</span>
+                        <span className="font-medium text-[#261C19]">
+                          {summary.normalExtraQuantity} topping{summary.normalExtraQuantity > 1 ? 's' : ''} adicional{summary.normalExtraQuantity > 1 ? 'es' : ''}
+                        </span>
+                        <span className="text-[#A73832] font-bold">+${summary.normalExtraPricePesos}</span>
+                      </li>
+                    )}
+                    {summary.premiumCharges.map(p => (
+                      <li key={p.optionId} className="flex items-center gap-1.5 text-xs text-[#6E564F]">
+                        <span className="text-[#A73832]">•</span>
+                        <span className="font-medium text-[#261C19]">{p.optionName}</span>
+                        <span className="text-[#6E564F]">×{p.quantity}</span>
+                        <span className="text-[#A73832] font-bold">+${p.totalExtraPesos}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Standard group with 0 included (Combos, Manzanitas, etc.)
+        return (
+          <div key={groupName}>
+            <p className="text-[11px] font-bold text-[#6E564F] uppercase tracking-wider">{groupName}:</p>
+            <ul className="mt-0.5 space-y-0.5">
+              {opts.map(opt => (
+                <li key={opt.optionId} className="flex items-center gap-1.5 text-xs text-[#6E564F]">
+                  <span className="text-[#A73832]">•</span>
+                  <span className="font-medium text-[#261C19]">{opt.optionName}</span>
+                  <span className="text-[#6E564F]">×{opt.quantity}</span>
+                  {opt.totalExtraPrice > 0 && (
+                    <span className="text-[#A73832] font-medium">+${opt.totalExtraPrice}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Cart Page
+// ---------------------------------------------------------------------------
 
 export default function CartPage() {
   const { items, itemCount, subtotal, isHydrated, updateQuantity, removeItem, clearCart } = useCart();
@@ -73,17 +171,31 @@ export default function CartPage() {
               </div>
 
               {/* Product Details & Controls */}
-              <div className="flex flex-col justify-between flex-1 py-1">
+              <div className="flex flex-col justify-between flex-1 py-1 min-w-0">
                 <div className="flex justify-between items-start gap-4">
-                  <div>
-                    <Link href={`/productos/${item.slug}`} className="font-serif font-bold text-lg md:text-xl text-[#261C19] hover:text-[#A73832] transition-colors">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/productos/${item.slug}`}
+                      className="font-serif font-bold text-lg md:text-xl text-[#261C19] hover:text-[#A73832] transition-colors line-clamp-2"
+                    >
                       {item.name}
                     </Link>
-                    <p className="text-sm text-[#A73832] font-bold mt-1">${item.unitPrice} MXN</p>
+
+                    {/* Unit price with base breakdown */}
+                    <div className="mt-1">
+                      <p className="text-sm text-[#A73832] font-bold">${item.unitPrice} MXN</p>
+                      {item.baseUnitPrice !== item.unitPrice && (
+                        <p className="text-[11px] text-[#6E564F]">Base ${item.baseUnitPrice} + extras</p>
+                      )}
+                    </div>
+
+                    {/* Selected options summary */}
+                    <SelectedOptionsSummary options={item.selectedOptions} />
                   </div>
+
                   <button
                     onClick={() => removeItem(item.lineId)}
-                    className="p-2 text-[#6E564F] hover:text-[#A73832] hover:bg-[#FFF9F2] rounded-md transition-colors"
+                    className="p-2 text-[#6E564F] hover:text-[#A73832] hover:bg-[#FFF9F2] rounded-md transition-colors shrink-0"
                     aria-label={`Eliminar ${item.name}`}
                   >
                     <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
@@ -114,7 +226,7 @@ export default function CartPage() {
                   </div>
 
                   <p className="font-bold text-[#261C19] text-base md:text-lg">
-                    ${item.unitPrice * item.quantity} <span className="text-xs font-normal text-[#6E564F]">MXN</span>
+                    ${(item.unitPrice * item.quantity).toFixed(0)} <span className="text-xs font-normal text-[#6E564F]">MXN</span>
                   </p>
                 </div>
               </div>
@@ -129,7 +241,7 @@ export default function CartPage() {
           <div className="space-y-4 text-sm text-[#6E564F] border-b border-[#E4D5C1] pb-6">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span className="font-bold text-[#261C19]">${subtotal} MXN</span>
+              <span className="font-bold text-[#261C19]">${subtotal.toFixed(0)} MXN</span>
             </div>
             <div className="flex justify-between">
               <span>Costo de envío</span>
@@ -139,11 +251,13 @@ export default function CartPage() {
 
           <div className="flex justify-between items-center text-lg">
             <span className="font-bold text-[#261C19]">Total estimado</span>
-            <span className="font-serif font-bold text-2xl text-[#A73832]">${subtotal} MXN</span>
+            <span className="font-serif font-bold text-2xl text-[#A73832]">${subtotal.toFixed(0)} MXN</span>
           </div>
 
           <p className="text-[11px] text-[#6E564F] leading-tight text-center italic">
-            El costo de entrega se definirá al finalizar tu pedido. Precios representativos para presentación del carrito.
+            El costo de entrega se definirá al finalizar tu pedido.
+            <br />
+            ⚠️ Los precios finales se verificarán al momento del checkout.
           </p>
 
           <div className="space-y-3 pt-2">

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getProductBySlug, getProducts } from '@/lib/catalog';
 import { ProductCard } from '@/components/store/ProductCard';
-import { AddToCartControls } from '@/components/store/AddToCartControls';
+import { ProductCustomizer } from '@/components/store/ProductCustomizer';
 import { ArrowLeft, Clock, MapPin, Sparkles } from 'lucide-react';
 
 export const revalidate = 0;
@@ -42,9 +42,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     ? relatedProducts
     : allProducts.filter((p) => p.id !== product.id).slice(0, 3);
 
-  // Determinar si el producto tiene grupos de opciones obligatorios
-  const requiresCustomization = product.optionGroups.some(g => g.isRequired);
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       {/* Breadcrumb / Back Link */}
@@ -60,20 +57,19 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
       {/* Main Product Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        {/* 2. Entire 1:1 Square Container Functions as Single Clean Placeholder */}
+        {/* Product Image */}
         <div className={`relative w-full lg:col-span-6 aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center p-8 text-center ${
           product.photoSrc
             ? 'bg-[#FFF9F2] border border-[#E4D5C1] shadow-2xs'
             : 'bg-[#FFF9F2] border-2 border-dashed border-[#E4D5C1]'
         }`}>
-          {/* Category Badge - Absolute in Top Left */}
+          {/* Category Badge */}
           <div className="absolute top-4 left-4 z-10">
             <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/80 backdrop-blur-xs text-[#A73832] border border-[#A73832]/20 shadow-2xs">
               {product.categoryLabel}
             </span>
           </div>
 
-          {/* Media Content: Real Photo (object-cover) OR Direct Centered "FOTO AQUÍ" Text */}
           {product.photoSrc ? (
             <Image
               src={product.photoSrc}
@@ -90,7 +86,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           )}
         </div>
 
-        {/* Right Info Details Column */}
+        {/* Right Info + Customizer Column */}
         <div className="lg:col-span-6 space-y-8">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F09CA9]/25 text-[#A73832] text-xs font-bold uppercase tracking-wider border border-[#F09CA9]/40">
@@ -109,7 +105,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           {/* Price Box */}
           <div className="p-6 rounded-xl bg-[#FFF9F2] border border-[#E4D5C1] flex items-center justify-between">
             <div>
-              <span className="text-xs uppercase tracking-wider text-[#6E564F] block">Precio Total</span>
+              <span className="text-xs uppercase tracking-wider text-[#6E564F] block">Precio Base</span>
               <span className="font-serif font-bold text-3xl text-[#A73832]">
                 ${product.price} <span className="text-sm font-sans font-normal text-[#6E564F]">MXN</span>
               </span>
@@ -120,7 +116,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </div>
           </div>
 
-          {/* Key Delivery & Notice Cards */}
+          {/* Info Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-white border border-[#E4D5C1] space-y-2">
               <div className="flex items-center gap-2 text-[#A73832] font-bold text-xs">
@@ -143,8 +139,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </div>
           </div>
 
-          {/* Add to Cart Actions */}
-          <AddToCartControls product={product} requiresCustomization={requiresCustomization} />
+          {/* Product Customizer (Client Component) */}
+          <ProductCustomizer
+            product={product}
+            optionGroups={product.optionGroups}
+          />
         </div>
       </div>
 

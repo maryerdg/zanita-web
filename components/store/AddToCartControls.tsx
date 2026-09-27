@@ -18,12 +18,14 @@ export function AddToCartControls({ product, requiresCustomization = false }: Ad
 
   const handleAddToCart = () => {
     addItem({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      unitPrice: product.price,
+      productId:       product.id,
+      slug:            product.slug,
+      name:            product.name,
+      baseUnitPrice:   product.price,
+      unitPrice:       product.price,
       quantity,
-      photoSrc: product.photoSrc || undefined
+      photoSrc:        product.photoSrc || undefined,
+      selectedOptions: [],
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 2500);
