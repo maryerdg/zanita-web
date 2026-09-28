@@ -51,15 +51,15 @@ export const POLICIES: Record<string, Policy> = {
     sections: [
       {
         title: '1. Entregas en Zonas Oficiales ($30 MXN Extra)',
-        content: 'Las entregas en Alba Roja, Ermita, Las Palmas, Hipódromo, Las Ferias, CETYS y Punto Medio tienen un costo adicional de $30 MXN. De lunes a viernes antes de las 2:00 p.m. se realiza la entrega a domicilio en estas zonas. Los sábados y domingos se manejan entregas programadas.',
+        content: 'Las entregas en Alba Roja, Ermita, Las Palmas, Hipódromo, Las Ferias y Punto Medio tienen un costo adicional de $30 MXN. De lunes a viernes antes de las 2:00 p.m. se realiza la entrega a domicilio en estas zonas. Los sábados y domingos se manejan entregas programadas.',
       },
       {
         title: '2. Otras Zonas de Tijuana',
         content: 'Para ubicaciones fuera del listado oficial se requiere cotización previa de envío, la cual oscila entre $50 MXN y $100 MXN según la distancia.',
       },
       {
-        title: '3. Condición de Pickup en CETYS',
-        content: 'El único lugar disponible para recolección presencial es en CETYS, de lunes a viernes de 4:00 p.m. a 8:00 p.m. No existe modalidad de pickup gratuito (incluyendo CETYS). El costo o condición específica del pickup en CETYS se encuentra actualmente pendiente de confirmación formal por la marca.',
+        title: '3. Puntos de Entrega Especiales',
+        content: 'Los puntos de entrega especiales (pickup) están disponibles únicamente para clientes autorizados. Las condiciones u horarios específicos se habilitarán directamente en el perfil del cliente.',
       },
     ],
   },

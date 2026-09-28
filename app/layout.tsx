@@ -3,6 +3,9 @@ import { Cormorant_Garamond, Birthstone, Manrope } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { createClient } from '@/app/actions/supabase-server';
+
+import { CartProvider } from '@/contexts/CartContext';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -35,20 +38,38 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let user = null;
+  let role = null;
+
+  // Preview deployments may not have a Supabase project configured yet.
+  // Keep the public catalog available while authentication is being set up.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (profile) role = profile.role;
+    }
+  }
+
   return (
     <html
       lang="es"
       className={`${cormorant.variable} ${birthstone.variable} ${manrope.variable}`}
     >
       <body className="min-h-screen flex flex-col bg-[#F5EBDC] text-[#261C19] antialiased selection:bg-[#F09CA9] selection:text-[#A73832]">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <CartProvider>
+          <Navbar isLoggedIn={!!user} userRole={role} />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );
