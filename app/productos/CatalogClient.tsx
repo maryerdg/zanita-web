@@ -1,6 +1,7 @@
 'use client';
 
 import { CatalogProduct } from '@/lib/catalog';
+import { getDisplayCatalogProducts } from '@/lib/catalog/presentation';
 import React, { useState, useMemo } from 'react';
 
 import { ProductCard } from '@/components/store/ProductCard';
@@ -18,11 +19,15 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Ca
     { id: 'uvas', name: 'Uvas Preparadas' },
   ];
 
+  const catalogProducts = useMemo(() => {
+    return getDisplayCatalogProducts(initialProducts);
+  }, [initialProducts]);
+
   const filteredProducts = useMemo(() => {
-    return initialProducts.filter((product) => {
+    return catalogProducts.filter((product) => {
       return selectedCategory === 'todos' || product.category === selectedCategory;
     });
-  }, [selectedCategory, initialProducts]);
+  }, [selectedCategory, catalogProducts]);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-8 sm:py-12 space-y-6 sm:space-y-8">

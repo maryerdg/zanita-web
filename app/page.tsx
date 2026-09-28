@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_CONFIG } from '@/config/site';
 import { getProducts, CatalogProduct } from "@/lib/catalog";
+import { getDisplayCatalogProducts } from '@/lib/catalog/presentation';
 import { ProductCard } from '@/components/store/ProductCard';
 import { ArrowRight, MessageSquare, Clock, MapPin, Calendar, Sparkles } from 'lucide-react';
 
@@ -14,7 +15,8 @@ export default async function HomePage() {
     'uvas-forradas'
   ];
   const allProducts = await getProducts();
-  const featuredProducts = FEATURED_SLUGS.map(slug => allProducts.find(p => p.slug === slug)).filter(Boolean) as CatalogProduct[];
+  const rawFeatured = FEATURED_SLUGS.map(slug => allProducts.find(p => p.slug === slug)).filter(Boolean) as CatalogProduct[];
+  const featuredProducts = getDisplayCatalogProducts(rawFeatured);
 
   const categories = [
     {

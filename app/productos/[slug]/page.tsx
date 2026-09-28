@@ -2,7 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getProductBySlug, getProducts } from '@/lib/catalog';
+import { isComboProduct, COMBO_METADATA, getRelatedProducts } from '@/lib/catalog/presentation';
 import { ProductCard } from '@/components/store/ProductCard';
+import { ComboSplitImage } from '@/components/store/ComboSplitImage';
 import { ProductCustomizer } from '@/components/store/ProductCustomizer';
 import { ArrowLeft, Clock, MapPin, Sparkles } from 'lucide-react';
 
@@ -33,14 +35,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     );
   }
 
-  const allProducts = await getProducts();
-  const relatedProducts = allProducts.filter(
-    (p) => p.id !== product.id && p.category === product.category
-  ).slice(0, 3);
+  const isCombo = isComboProduct(product);
+  const displayName = isCombo ? COMBO_METADATA.name : product.name;
+  const displayDescription = isCombo ? COMBO_METADATA.detailDescription : product.description;
 
-  const fallbackRelated = relatedProducts.length > 0
-    ? relatedProducts
-    : allProducts.filter((p) => p.id !== product.id).slice(0, 3);
+  const allProducts = await getProducts();
+  const { products: relatedProducts, sectionTitle: relatedTitle } = getRelatedProducts(allProducts, product);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
@@ -59,7 +59,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Product Image */}
         <div className={`relative w-full lg:col-span-6 aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center p-8 text-center ${
-          product.photoSrc
+          isCombo || product.photoSrc
             ? 'bg-[#FFF9F2] border border-[#E4D5C1] shadow-2xs'
             : 'bg-[#FFF9F2] border-2 border-dashed border-[#E4D5C1]'
         }`}>
@@ -70,7 +70,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </span>
           </div>
 
-          {product.photoSrc ? (
+          {isCombo ? (
+            <ComboSplitImage priority sizes="(max-width: 1024px) 100vw, 600px" />
+          ) : product.photoSrc ? (
             <Image
               src={product.photoSrc}
               alt={product.name}
@@ -95,10 +97,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </div>
 
             <h1 className="font-serif font-bold text-3xl sm:text-4xl text-[#261C19]">
-              {product.name}
+              {displayName}
             </h1>
             <p className="text-base text-[#6E564F] leading-relaxed">
-              {product.description}
+              {displayDescription}
             </p>
           </div>
 
@@ -139,6 +141,63 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </div>
           </div>
 
+          {/* Combo Size Selector — compact, shown before COMPOSICIÓN DE MANZANITAS */}
+          {isCombo && (
+            <div className="space-y-2.5 p-4 sm:p-5 rounded-2xl bg-[#FFF9F2] border border-[#E4D5C1] shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#A73832]">
+                  Elige tu combo
+                </span>
+                <span className="text-[11px] text-[#6E564F] font-medium">
+                  {product.slug === 'combo-6-manzanitas-chamoy-jumbo' ? '6 piezas seleccionadas' : '12 piezas seleccionadas'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                {COMBO_METADATA.sizes.map((sizeOpt) => {
+                  const isSelected = sizeOpt.slug === product.slug;
+
+                  if (isSelected) {
+                    return (
+                      <div
+                        key={sizeOpt.slug}
+                        className="p-3 sm:p-3.5 rounded-xl border-2 border-[#A73832] bg-white shadow-xs flex flex-col justify-between cursor-default transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-bold text-[#A73832]">
+                            {sizeOpt.size} manzanitas
+                          </span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#A73832]" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-serif font-bold text-[#261C19] mt-1.5">
+                          ${sizeOpt.price} <span className="text-[10px] sm:text-xs font-sans font-normal text-[#6E564F]">MXN</span>
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={sizeOpt.slug}
+                      href={`/productos/${sizeOpt.slug}`}
+                      className="p-3 sm:p-3.5 rounded-xl border border-[#E4D5C1] bg-white/80 hover:bg-white hover:border-[#A73832]/60 hover:shadow-xs transition-all flex flex-col justify-between group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs sm:text-sm font-medium text-[#6E564F] group-hover:text-[#261C19]">
+                          {sizeOpt.size} manzanitas
+                        </span>
+                        <span className="w-2.5 h-2.5 rounded-full border border-[#E4D5C1] group-hover:border-[#A73832]" />
+                      </div>
+                      <span className="text-xs sm:text-sm font-serif font-bold text-[#6E564F] group-hover:text-[#A73832] mt-1.5">
+                        ${sizeOpt.price} <span className="text-[10px] sm:text-xs font-sans font-normal text-[#6E564F]">MXN</span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Product Customizer (Client Component) */}
           <ProductCustomizer
             product={product}
@@ -148,16 +207,18 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       </div>
 
       {/* Related Products */}
-      <div className="pt-12 border-t border-[#E4D5C1]">
-        <h2 className="font-serif font-bold text-2xl text-[#261C19] mb-6">
-          Más Productos de la Categoría
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {fallbackRelated.map((relProd) => (
-            <ProductCard key={relProd.id} product={relProd} />
-          ))}
+      {relatedProducts.length > 0 && (
+        <div className="pt-12 border-t border-[#E4D5C1]">
+          <h2 className="font-serif font-bold text-2xl text-[#261C19] mb-6">
+            {relatedTitle}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {relatedProducts.map((relProd) => (
+              <ProductCard key={relProd.id} product={relProd} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
