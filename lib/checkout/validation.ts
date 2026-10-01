@@ -8,6 +8,7 @@ export function getTijuanaParts(date: Date = new Date(), timezone: string = 'Ame
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    weekday: 'short',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -15,10 +16,12 @@ export function getTijuanaParts(date: Date = new Date(), timezone: string = 'Ame
   });
   const parts = formatter.formatToParts(date);
   const get = (type: string) => parts.find((p) => p.type === type)?.value || '00';
+  const weekday = parts.find((p) => p.type === 'weekday')?.value || '';
   return {
     year: parseInt(get('year'), 10),
     month: parseInt(get('month'), 10),
     day: parseInt(get('day'), 10),
+    weekday, // 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
     hour: parseInt(get('hour'), 10) === 24 ? 0 : parseInt(get('hour'), 10),
     minute: parseInt(get('minute'), 10),
     second: parseInt(get('second'), 10),
@@ -57,6 +60,36 @@ export function isDateTimeAtLeast24Hours(
   if (dateStr === minDateStr && timeStr < minTimeStr) return false;
 
   return true;
+}
+
+// Check whether current time in timezone reached or passed the order submission cutoff (e.g. "14:00")
+// NOTE: Cutoff applies ONLY Monday through Friday (Mon-Fri >= 14:00 Tijuana). Weekends are NOT blocked by cutoff.
+export function isOrderSubmissionCutoffReached(
+  cutoffTimeStr: string = '14:00',
+  timezone: string = 'America/Tijuana',
+  nowDate: Date = new Date()
+): boolean {
+  try {
+    const parts = getTijuanaParts(nowDate, timezone);
+    // Mon-Fri check:
+    const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(parts.weekday);
+    if (!isWeekday) {
+      return false;
+    }
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const currentTimeStr = `${pad(parts.hour)}:${pad(parts.minute)}`;
+
+    const [cutoffH, cutoffM] = cutoffTimeStr.split(':').map((v) => parseInt(v, 10));
+    const [curH, curM] = currentTimeStr.split(':').map((v) => parseInt(v, 10));
+
+    const curMinutes = curH * 60 + curM;
+    const cutoffMinutes = cutoffH * 60 + cutoffM;
+
+    return curMinutes >= cutoffMinutes;
+  } catch {
+    return false;
+  }
 }
 
 // Validate CETYS pickup schedule (days and hours)

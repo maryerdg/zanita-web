@@ -47,7 +47,9 @@ interface OrderData {
 export function OrderStatusView({ order }: { order: OrderData }) {
   // Snapshot authority: primary source of truth is historical snapshot
   const isCetys = order.delivery_type === 'special' || order.delivery_point?.type === 'special';
-  const isDeliveryPending = order.delivery_quote_status === 'pending';
+  const isOther = order.delivery_type === 'other' || order.delivery_point?.type === 'other';
+  const isFreeDelivery = !isOther;
+  const isDeliveryPending = isOther && order.delivery_quote_status === 'pending';
 
   const subtotalPesos = Math.round(order.products_subtotal_cents / 100);
   const totalPesos = isDeliveryPending
@@ -156,11 +158,11 @@ export function OrderStatusView({ order }: { order: OrderData }) {
         <div className="mt-4 p-3.5 rounded-xl bg-[#FFF9F2] border border-[#E4D5C1] text-xs text-[#6E564F] flex items-center gap-2.5">
           <Clock className="w-4 h-4 text-[#A73832] shrink-0" />
           <span>
-            {isDeliveryPending && !isCetys
+            {isDeliveryPending
               ? 'Estamos revisando tu pedido y calculando el costo de envío.'
               : isCetys
               ? 'Estamos revisando tu pedido. Pickup en CETYS no requiere costo de entrega.'
-              : 'Estamos revisando tu pedido y confirmando disponibilidad.'}
+              : 'Sin costo de entrega. Estamos revisando tu pedido y confirmando disponibilidad.'}
           </span>
         </div>
       </div>
@@ -239,6 +241,8 @@ export function OrderStatusView({ order }: { order: OrderData }) {
               <span className="font-bold text-[#2D6A4F]">Sin costo ($0 MXN)</span>
             ) : isDeliveryPending ? (
               <span className="italic text-[#A75D28] font-medium">Por confirmar</span>
+            ) : isFreeDelivery ? (
+              <span className="font-bold text-[#2D6A4F]">Sin costo de entrega</span>
             ) : (
               <span className="font-bold text-[#261C19]">
                 ${Math.round((order.delivery_fee_cents || 0) / 100)} MXN

@@ -11,6 +11,7 @@ import {
   getMinAnticipationDateTime,
   isDateTimeAtLeast24Hours,
   validateCetysSchedule,
+  isOrderSubmissionCutoffReached,
   buildOrderPayload,
 } from '@/lib/checkout/validation';
 import {
@@ -172,6 +173,12 @@ export default function CheckoutForm({
   const isOtherLocation = selectedPoint?.type === 'other';
   const isCetys = selectedPoint?.requires_special_pickup_permission === true;
 
+  // Cutoff general (14:00 America/Tijuana): aplica a puntos estándar y otra ubicación. CETYS queda exento.
+  const isCutoffActive = !isCetys && isOrderSubmissionCutoffReached(
+    storeSettings.orderSubmissionCutoff || '14:00',
+    storeSettings.timezone || 'America/Tijuana'
+  );
+
   // Real-time schedule validation for CETYS
   const cetysValidation = isCetys
     ? validateCetysSchedule(requestedDate, requestedTime, storeSettings.cetysPickupSchedule)
@@ -193,6 +200,14 @@ export default function CheckoutForm({
     if (isSubmitting) return;
 
     setSubmitError(null);
+
+    // Validación de horario límite (Cutoff 14:00 Tijuana)
+    if (isCutoffActive) {
+      setSubmitError('Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const newErrors: Record<string, string> = {};
 
     if (!customerName.trim()) {
@@ -351,6 +366,16 @@ export default function CheckoutForm({
           Completa los datos de entrega y envía tu pedido para revisión.
         </p>
       </div>
+
+      {isCutoffActive && (
+        <div className="p-4 rounded-xl bg-[#FFF4E5] border border-[#F5D0A9] text-[#A75D28] text-xs sm:text-sm flex items-start gap-3 shadow-xs">
+          <Clock className="w-5 h-5 shrink-0 mt-0.5 text-[#A75D28]" />
+          <div className="space-y-0.5">
+            <p className="font-bold">Horario límite de recepción alcanzado</p>
+            <p>Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.</p>
+          </div>
+        </div>
+      )}
 
       {submitError && (
         <div className="p-4 rounded-xl bg-[#FFF0F0] border border-[#A73832]/30 text-[#A73832] text-xs sm:text-sm flex items-start gap-3 shadow-xs">
@@ -601,13 +626,13 @@ export default function CheckoutForm({
                             <span className="font-bold text-sm text-[#261C19]">{dp.name}</span>
 
                             {/* Badge according to point type */}
-                            {isSpecial ? (
-                              <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#E8F3EB] px-2.5 py-0.5 rounded-full border border-[#2D6A4F]/20">
-                                Sin costo de entrega
-                              </span>
-                            ) : (
+                            {isOther ? (
                               <span className="text-[11px] font-bold text-[#A73832] bg-[#FFF0F0] px-2.5 py-0.5 rounded-full border border-[#A73832]/20">
                                 Envío por cotizar
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-bold text-[#2D6A4F] bg-[#E8F3EB] px-2.5 py-0.5 rounded-full border border-[#2D6A4F]/20">
+                                Sin costo de entrega
                               </span>
                             )}
                           </div>
@@ -619,11 +644,11 @@ export default function CheckoutForm({
                             </p>
                           ) : isOther ? (
                             <p className="text-xs text-[#6E564F] mt-1">
-                              Entrega a domicilio fuera de los puntos oficiales. Costo de envío desde $50 MXN, según distancia.
+                              Entrega a domicilio fuera de puntos oficiales. Envío desde $50 MXN, según distancia.
                             </p>
                           ) : (
                             <p className="text-xs text-[#6E564F] mt-1">
-                              Punto oficial de entrega. El costo se confirmará al revisar tu pedido.
+                              Punto oficial de entrega. Sin costo de entrega.
                             </p>
                           )}
                         </div>
@@ -678,7 +703,7 @@ export default function CheckoutForm({
                     </p>
                   )}
                   <p className="text-[11px] text-[#6E564F] italic">
-                    El costo de envío se cotiza según la distancia (desde $50 MXN). Se confirmará el costo exacto al revisar tu pedido.
+                    Envío desde $50 MXN, según distancia. Se confirmará el costo exacto al revisar tu pedido.
                   </p>
                 </div>
               )}
@@ -774,14 +799,12 @@ export default function CheckoutForm({
 
                 <div className="flex justify-between items-center">
                   <span>Envío</span>
-                  {isCetys ? (
-                    <span className="font-bold text-[#2D6A4F]">$0 MXN (CETYS)</span>
-                  ) : selectedPoint ? (
+                  {isOtherLocation ? (
                     <span className="text-xs font-bold text-[#A73832] bg-[#FFF0F0] px-2 py-0.5 rounded-full">
-                      Por cotizar
+                      Por confirmar
                     </span>
                   ) : (
-                    <span className="text-xs italic text-[#6E564F]">Pendiente</span>
+                    <span className="font-bold text-[#2D6A4F]">$0 MXN</span>
                   )}
                 </div>
 
@@ -789,14 +812,14 @@ export default function CheckoutForm({
                 <div className="border-t border-[#E4D5C1]/60 pt-3">
                   <div className="flex justify-between items-baseline">
                     <span className="font-bold text-[#261C19]">
-                      {isCetys ? 'Total estimado' : 'Subtotal actual'}
+                      {isOtherLocation ? 'Subtotal actual' : 'Total'}
                     </span>
                     <span className="font-serif font-bold text-2xl text-[#A73832]">
                       ${subtotal.toFixed(0)} <span className="text-xs font-sans text-[#6E564F]">MXN</span>
                     </span>
                   </div>
 
-                  {!isCetys && (
+                  {isOtherLocation && (
                     <p className="text-[11px] text-[#6E564F] mt-1 text-right italic">
                       + costo de envío por confirmar
                     </p>
@@ -813,7 +836,7 @@ export default function CheckoutForm({
               <div className="space-y-3 pt-1">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCutoffActive}
                   className="w-full py-4 rounded-md bg-[#A73832] hover:bg-[#8e2e28] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs md:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
@@ -821,14 +844,22 @@ export default function CheckoutForm({
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Enviando pedido...</span>
                     </span>
+                  ) : isCutoffActive ? (
+                    <span>Recepción cerrada por hoy</span>
                   ) : (
                     <span>Enviar pedido a revisión</span>
                   )}
                 </button>
 
-                <p className="text-[11px] text-center text-[#6E564F]">
-                  No se realizará ningún cobro al enviar tu pedido.
-                </p>
+                {isCutoffActive ? (
+                  <p className="text-[11px] text-center font-medium text-[#A73832]">
+                    Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-center text-[#6E564F]">
+                    No se realizará ningún cobro al enviar tu pedido.
+                  </p>
+                )}
               </div>
             </div>
           </div>

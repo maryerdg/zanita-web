@@ -41,6 +41,13 @@ export function mapSubmitOrderError(rawError: { message?: string; code?: string 
   ) {
     return 'Selecciona una fecha y hora con al menos 24 horas de anticipación.';
   }
+  if (
+    code === 'P0036' ||
+    msg.includes('cerramos la recepción de pedidos') ||
+    msg.includes('cerramos la recepcion de pedidos')
+  ) {
+    return 'Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.';
+  }
   if (code === 'P0004' || msg.includes('Punto de entrega no encontrado') || msg.includes('punto de entrega')) {
     return 'El punto de entrega seleccionado no está disponible. Selecciona otro punto.';
   }
