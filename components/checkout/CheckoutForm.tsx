@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useCart, type CartSelectedOption } from '@/contexts/CartContext';
 import { calculateGroupExtraSummary } from '@/lib/catalog/pricing';
 import type { CheckoutProfile, DeliveryPoint, StoreSettings } from '@/lib/checkout/types';
@@ -12,6 +13,11 @@ import {
   validateCetysSchedule,
   buildOrderPayload,
 } from '@/lib/checkout/validation';
+import {
+  getOrCreateIdempotencyKey,
+  clearIdempotencyKey,
+} from '@/lib/checkout/idempotency';
+import { submitCheckoutOrder } from '@/app/actions/orders';
 import {
   ArrowLeft,
   ShoppingBag,
@@ -122,19 +128,8 @@ export default function CheckoutForm({
   deliveryPoints,
   storeSettings,
 }: CheckoutFormProps) {
-  const { items, itemCount, subtotal, isHydrated } = useCart();
-
-  // Stable idempotency key per checkout session attempt (held in ref)
-  const idempotencyKeyRef = useRef<string>('');
-  useEffect(() => {
-    if (!idempotencyKeyRef.current) {
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        idempotencyKeyRef.current = crypto.randomUUID();
-      } else {
-        idempotencyKeyRef.current = 'idem-' + Math.random().toString(36).substring(2, 15);
-      }
-    }
-  }, []);
+  const router = useRouter();
+  const { items, itemCount, subtotal, isHydrated, clearCart } = useCart();
 
   // Compute 24h default and minimums in Tijuana timezone
   const { minDateStr, minTimeStr } = getMinAnticipationDateTime(
@@ -168,8 +163,10 @@ export default function CheckoutForm({
   // Form State (Section 4: Notes)
   const [notes, setNotes] = useState('');
 
-  // Validation & UI feedback state
+  // Validation & Submission state
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const selectedPoint = visibleDeliveryPoints.find((dp) => dp.id === selectedPointId);
   const isOtherLocation = selectedPoint?.type === 'other';
@@ -191,8 +188,11 @@ export default function CheckoutForm({
   // ---------------------------------------------------------------------------
   // Validation on Submit
   // ---------------------------------------------------------------------------
-  const handleValidateAndSubmit = (e: React.FormEvent) => {
+  const handleValidateAndSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setSubmitError(null);
     const newErrors: Record<string, string> = {};
 
     if (!customerName.trim()) {
@@ -246,22 +246,50 @@ export default function CheckoutForm({
       return;
     }
 
-    // Build order payload for verification / PASS 8C.3 readiness
-    buildOrderPayload({
-      idempotencyKey: idempotencyKeyRef.current,
-      customerName,
-      customerPhone,
-      customerEmail,
-      requestedDate,
-      requestedTime,
-      deliveryPointId: selectedPointId,
-      deliveryAddress: isOtherLocation ? deliveryAddress : null,
-      notes,
-      cartItems: items,
-    });
+    setIsSubmitting(true);
 
-    // In PASS 8C.2, DO NOT CALL RPC! Form validation succeeded.
-    // No PII logged. No development banner rendered.
+    try {
+      // 1. Get or create hardened idempotency key bound to current cart configuration
+      const key = getOrCreateIdempotencyKey(items);
+
+      // 2. Build canonical payload for submit_order RPC
+      const payload = buildOrderPayload({
+        idempotencyKey: key,
+        customerName,
+        customerPhone,
+        customerEmail,
+        requestedDate,
+        requestedTime,
+        deliveryPointId: selectedPointId,
+        deliveryAddress: isOtherLocation ? deliveryAddress : null,
+        notes,
+        cartItems: items,
+      });
+
+      // 3. Call Server Action
+      const result = await submitCheckoutOrder(payload);
+
+      if (!result.success || !result.orderNumber) {
+        setSubmitError(
+          result.error ||
+            'No pudimos procesar tu pedido. Tu carrito sigue guardado. Intenta nuevamente.'
+        );
+        setIsSubmitting(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      // 4. On SUCCESS: Clear cart, clear session idempotency key, redirect to persistent order page
+      clearCart();
+      clearIdempotencyKey();
+      router.push(`/pedidos/${result.orderNumber}`);
+    } catch {
+      setSubmitError(
+        'Ocurrió un error inesperado al procesar tu pedido. Tu carrito sigue guardado. Intenta nuevamente.'
+      );
+      setIsSubmitting(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -323,6 +351,16 @@ export default function CheckoutForm({
           Completa los datos de entrega y envía tu pedido para revisión.
         </p>
       </div>
+
+      {submitError && (
+        <div className="p-4 rounded-xl bg-[#FFF0F0] border border-[#A73832]/30 text-[#A73832] text-xs sm:text-sm flex items-start gap-3 shadow-xs">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold">No se pudo enviar el pedido</p>
+            <p>{submitError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid: Form (Left) & Order Summary (Right) */}
       <form onSubmit={handleValidateAndSubmit} noValidate>
@@ -775,9 +813,17 @@ export default function CheckoutForm({
               <div className="space-y-3 pt-1">
                 <button
                   type="submit"
-                  className="w-full py-4 rounded-md bg-[#A73832] hover:bg-[#8e2e28] text-white text-xs md:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full py-4 rounded-md bg-[#A73832] hover:bg-[#8e2e28] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs md:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Enviar pedido a revisión</span>
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Enviando pedido...</span>
+                    </span>
+                  ) : (
+                    <span>Enviar pedido a revisión</span>
+                  )}
                 </button>
 
                 <p className="text-[11px] text-center text-[#6E564F]">
