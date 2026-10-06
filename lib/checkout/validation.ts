@@ -62,35 +62,6 @@ export function isDateTimeAtLeast24Hours(
   return true;
 }
 
-// Check whether current time in timezone reached or passed the order submission cutoff (e.g. "14:00")
-// NOTE: Cutoff applies ONLY Monday through Friday (Mon-Fri >= 14:00 Tijuana). Weekends are NOT blocked by cutoff.
-export function isOrderSubmissionCutoffReached(
-  cutoffTimeStr: string = '14:00',
-  timezone: string = 'America/Tijuana',
-  nowDate: Date = new Date()
-): boolean {
-  try {
-    const parts = getTijuanaParts(nowDate, timezone);
-    // Mon-Fri check:
-    const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(parts.weekday);
-    if (!isWeekday) {
-      return false;
-    }
-
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const currentTimeStr = `${pad(parts.hour)}:${pad(parts.minute)}`;
-
-    const [cutoffH, cutoffM] = cutoffTimeStr.split(':').map((v) => parseInt(v, 10));
-    const [curH, curM] = currentTimeStr.split(':').map((v) => parseInt(v, 10));
-
-    const curMinutes = curH * 60 + curM;
-    const cutoffMinutes = cutoffH * 60 + cutoffM;
-
-    return curMinutes >= cutoffMinutes;
-  } catch {
-    return false;
-  }
-}
 
 // Validate CETYS pickup schedule (days and hours)
 export function validateCetysSchedule(

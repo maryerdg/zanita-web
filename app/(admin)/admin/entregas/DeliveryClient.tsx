@@ -594,59 +594,110 @@ export default function DeliveryClient({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-[#E8DCC4] text-[#6E564F]">
-                  <th className="py-2.5 px-4 font-semibold">Distancia</th>
-                  <th className="py-2.5 px-4 font-semibold">Costo de Envío</th>
-                  <th className="py-2.5 px-4 font-semibold">Tipo</th>
-                  <th className="py-2.5 px-4 font-semibold text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F2ECE1]">
-                {pricingRules.map((rule) => {
-                  const min = rule.min_distance_km
-                  const max = rule.max_distance_km
-                  const feePesos = rule.fee_cents !== null ? rule.fee_cents / 100 : null
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[#E8DCC4] text-[#6E564F]">
+                    <th className="py-2.5 px-4 font-semibold">Distancia</th>
+                    <th className="py-2.5 px-4 font-semibold">Costo de Envío</th>
+                    <th className="py-2.5 px-4 font-semibold">Tipo</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F2ECE1]">
+                  {pricingRules.map((rule) => {
+                    const min = rule.min_distance_km
+                    const max = rule.max_distance_km
+                    const feePesos = rule.fee_cents !== null ? rule.fee_cents / 100 : null
 
-                  return (
-                    <tr key={rule.id} className="hover:bg-[#FAF7F2]/50">
-                      <td className="py-3 px-4 font-medium text-[#261C19]">
+                    return (
+                      <tr key={rule.id} className="hover:bg-[#FAF7F2]/50">
+                        <td className="py-3 px-4 font-medium text-[#261C19]">
+                          {min} km {max !== null ? `a ${max} km` : 'en adelante'}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-[#A73832]">
+                          {rule.requires_manual_quote
+                            ? 'Por cotizar'
+                            : `$${feePesos?.toFixed(2)} MXN`}
+                        </td>
+                        <td className="py-3 px-4 text-[#6E564F]">
+                          {rule.requires_manual_quote ? (
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-medium">
+                              Cotización manual
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-medium">
+                              Automática
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => handleDeletePricingRule(rule.id)}
+                            disabled={isPending}
+                            className="p-1 text-[#6E564F] hover:text-red-700 transition-colors"
+                            title="Eliminar tarifa"
+                          >
+                            <Trash2 className="w-4 h-4 inline" />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="sm:hidden space-y-2.5">
+              {pricingRules.map((rule) => {
+                const min = rule.min_distance_km
+                const max = rule.max_distance_km
+                const feePesos = rule.fee_cents !== null ? rule.fee_cents / 100 : null
+
+                return (
+                  <div
+                    key={rule.id}
+                    className="p-3.5 rounded-xl border border-[#E8DCC4] bg-[#FAF7F2]/60 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div>
+                      <p className="font-semibold text-[#261C19]">
                         {min} km {max !== null ? `a ${max} km` : 'en adelante'}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-[#A73832]">
-                        {rule.requires_manual_quote
-                          ? 'Por cotizar'
-                          : `$${feePesos?.toFixed(2)} MXN`}
-                      </td>
-                      <td className="py-3 px-4 text-[#6E564F]">
-                        {rule.requires_manual_quote ? (
-                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-medium">
-                            Cotización manual
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-medium">
-                            Automática
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleDeletePricingRule(rule.id)}
-                          disabled={isPending}
-                          className="p-1 text-[#6E564F] hover:text-red-700 transition-colors"
-                          title="Eliminar tarifa"
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-bold text-[#A73832]">
+                          {rule.requires_manual_quote
+                            ? 'Por cotizar'
+                            : `$${feePesos?.toFixed(2)} MXN`}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
+                            rule.requires_manual_quote
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-emerald-50 text-emerald-700'
+                          }`}
                         >
-                          <Trash2 className="w-4 h-4 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                          {rule.requires_manual_quote ? 'Manual' : 'Automática'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePricingRule(rule.id)}
+                      disabled={isPending}
+                      className="p-2 text-[#6E564F] hover:text-red-700 transition-colors rounded-lg bg-white border border-[#E8DCC4] shrink-0"
+                      title="Eliminar tarifa"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
 

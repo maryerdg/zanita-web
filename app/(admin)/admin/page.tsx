@@ -8,7 +8,6 @@ import {
   GraduationCap,
   MapPin,
   ArrowRight,
-  Sparkles,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -207,8 +206,7 @@ export default async function AdminDashboardPage() {
 
       {/* Quick operational actions */}
       <div className="bg-white rounded-2xl p-6 border border-[#E8DCC4] shadow-xs">
-        <h2 className="text-lg font-serif font-bold text-[#261C19] mb-4 flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-[#D46240]" />
+        <h2 className="text-lg font-serif font-bold text-[#261C19] mb-4">
           Acciones Operativas Frecuentes
         </h2>
 

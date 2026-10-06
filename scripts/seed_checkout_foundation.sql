@@ -50,9 +50,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- 2. CONFIGURACIÓN BASE DE LA TIENDA (STORE SETTINGS)
 INSERT INTO public.zanita_store_settings (key, value, is_public) VALUES
   ('timezone', '"America/Tijuana"'::jsonb, true),
-  ('min_anticipation_hours', '24'::jsonb, true),
-  ('cetys_pickup_schedule', '{"days": [1, 2, 3, 4, 5], "start": "16:00", "end": "20:00"}'::jsonb, true),
-  ('order_submission_cutoff', '"14:00"'::jsonb, true)
+  ('min_anticipation_hours', '24'::jsonb, true)
 ON CONFLICT (key) DO UPDATE SET
   value     = EXCLUDED.value,
   is_public = EXCLUDED.is_public;

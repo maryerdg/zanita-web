@@ -23,7 +23,6 @@ import {
   Store,
   Truck,
   GraduationCap,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   Info,
@@ -742,7 +741,6 @@ export default function AvailabilityClient({
             onClick={() => openStandModal(selectedDateStr)}
             className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold bg-[#A73832] text-white hover:bg-[#87201D] shadow-xs transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
             Activar Stand CETYS
           </button>
           <button
@@ -763,7 +761,7 @@ export default function AvailabilityClient({
             Horario Habitual de Operación
           </h2>
           <p className="text-xs text-[#6E564F] mt-1">
-            Define los días de la semana y los horarios recurrentes en que los clientes pueden agendar pedidos.
+            Configura los días y horarios en los que puedes recibir pedidos y realizar entregas.
           </p>
         </div>
 
@@ -1275,8 +1273,7 @@ export default function AvailabilityClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div className="bg-white rounded-2xl border border-[#E8DCC4] p-6 max-w-md w-full shadow-xl space-y-4">
             <div>
-              <h3 className="font-serif text-xl font-bold text-[#A73832] flex items-center">
-                <Sparkles className="w-5 h-5 mr-2" />
+              <h3 className="font-serif text-xl font-bold text-[#A73832]">
                 Activar Stand CETYS
               </h3>
               <p className="text-xs text-[#6E564F] mt-1">

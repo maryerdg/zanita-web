@@ -46,7 +46,7 @@ export function mapSubmitOrderError(rawError: { message?: string; code?: string 
     msg.includes('cerramos la recepción de pedidos') ||
     msg.includes('cerramos la recepcion de pedidos')
   ) {
-    return 'Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.';
+    return 'Por hoy ya cerramos la recepción de pedidos para entrega hoy. Por favor elige otra fecha u horario para continuar.';
   }
   if (code === 'P0004' || msg.includes('Punto de entrega no encontrado') || msg.includes('punto de entrega')) {
     return 'El punto de entrega seleccionado no está disponible. Selecciona otro punto.';

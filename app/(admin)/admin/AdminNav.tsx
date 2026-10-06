@@ -9,7 +9,6 @@ import {
   Users,
   ShoppingBag,
   ExternalLink,
-  ShieldCheck,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -32,8 +31,7 @@ export default function AdminNav({ userEmail }: { userEmail: string }) {
             <span className="font-serif text-2xl font-bold tracking-tight text-[#A73832]">
               Zanita
             </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#F5EBDC] text-[#6E564F] border border-[#E8DCC4]">
-              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-[#D46240]" />
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#F5EBDC] text-[#6E564F] border border-[#E8DCC4]">
               Operaciones
             </span>
           </div>
