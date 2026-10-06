@@ -1,6 +1,7 @@
 
 'use server'
 import { getSiteUrl } from "@/lib/utils/url"
+import { getSafeNextUrl } from "@/lib/checkout/validation"
 
 import { createClient } from './supabase-server'
 import { revalidatePath } from 'next/cache'
@@ -122,8 +123,11 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
     return { error: 'Correo o contraseña incorrectos.' }
   }
 
+  const nextUrl = formData.get('next') as string
+  const safeNext = getSafeNextUrl(nextUrl, '/mi-cuenta')
+
   revalidatePath('/', 'layout')
-  redirect('/mi-cuenta')
+  redirect(safeNext)
 }
 
 export async function signOut(prevState: ActionState, formData: FormData): Promise<ActionState> {

@@ -1,8 +1,10 @@
 'use client'
 import { signIn, resendConfirmation } from '@/app/actions/auth'
+import { getSafeNextUrl } from '@/lib/checkout/validation'
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, Suspense } from 'react'
 import { useFormStatus } from 'react-dom'
+import { useSearchParams } from 'next/navigation'
 
 function ResendButton() {
   const { pending } = useFormStatus()
@@ -17,56 +19,68 @@ function ResendButton() {
   )
 }
 
-export default function Login() {
+function LoginForm() {
   const [state, formAction] = useActionState(signIn, null)
   const [resendState, resendAction] = useActionState(resendConfirmation, null)
+  const searchParams = useSearchParams()
+  const rawNext = searchParams.get('next') || ''
+  const next = getSafeNextUrl(rawNext, '')
 
   const isUnconfirmedError = state?.error === 'Confirma tu correo electrónico antes de iniciar sesión.'
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF9F2] p-4">
-      <div className="w-full max-w-sm bg-white p-6 sm:p-8 rounded-2xl border border-[#E4D5C1]/70 shadow-sm">
-        <h1 className="text-2xl font-serif text-[#261C19] text-center mb-6">Iniciar sesión</h1>
+    <div className="w-full max-w-sm bg-white p-6 sm:p-8 rounded-2xl border border-[#E4D5C1]/70 shadow-sm">
+      <h1 className="text-2xl font-serif text-[#261C19] text-center mb-6">Iniciar sesión</h1>
 
-        {state?.error && (
-          <div className="mb-6 text-center">
-            <p className="text-sm text-[#A73832]">{state.error}</p>
-            {isUnconfirmedError && (
-              <div className="mt-3">
-                <p className="text-xs text-[#6E564F] mb-2">¿No recibiste el correo o ya expiró?</p>
-                <form action={resendAction}>
-                  <input type="hidden" name="email" value={state.email || ''} />
-                  <ResendButton />
-                </form>
-                {resendState?.success && (
-                  <p className="mt-2 text-xs text-green-700">{resendState.success}</p>
-                )}
-                {resendState?.error && (
-                  <p className="mt-2 text-xs text-[#A73832]">{resendState.error}</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <form action={formAction} className="space-y-4">
-          <div>
-            <label className="block text-xs text-[#6E564F] mb-1">Correo electrónico</label>
-            <input name="email" type="email" required className="w-full px-3 py-2 border border-[#E4D5C1] rounded-md text-sm text-[#261C19]" />
-          </div>
-          <div>
-            <label className="block text-xs text-[#6E564F] mb-1">Contraseña</label>
-            <input name="password" type="password" required className="w-full px-3 py-2 border border-[#E4D5C1] rounded-md text-sm text-[#261C19]" />
-          </div>
-          <button type="submit" className="w-full py-2.5 bg-[#A73832] text-white rounded-md text-sm font-medium hover:bg-[#8e2e28] transition-colors">
-            Entrar
-          </button>
-        </form>
-        <div className="mt-4 text-center space-y-2">
-          <Link href="/recuperar-contrasena" className="block text-xs text-[#D46240] hover:underline">¿Olvidaste tu contraseña?</Link>
-          <Link href="/registro" className="block text-xs text-[#6E564F] hover:underline">¿No tienes cuenta? Regístrate</Link>
+      {state?.error && (
+        <div className="mb-6 text-center">
+          <p className="text-sm text-[#A73832]">{state.error}</p>
+          {isUnconfirmedError && (
+            <div className="mt-3">
+              <p className="text-xs text-[#6E564F] mb-2">¿No recibiste el correo o ya expiró?</p>
+              <form action={resendAction}>
+                <input type="hidden" name="email" value={state.email || ''} />
+                <ResendButton />
+              </form>
+              {resendState?.success && (
+                <p className="mt-2 text-xs text-green-700">{resendState.success}</p>
+              )}
+              {resendState?.error && (
+                <p className="mt-2 text-xs text-[#A73832]">{resendState.error}</p>
+              )}
+            </div>
+          )}
         </div>
+      )}
+
+      <form action={formAction} className="space-y-4">
+        {next && <input type="hidden" name="next" value={next} />}
+        <div>
+          <label className="block text-xs text-[#6E564F] mb-1">Correo electrónico</label>
+          <input name="email" type="email" required className="w-full px-3 py-2 border border-[#E4D5C1] rounded-md text-sm text-[#261C19]" />
+        </div>
+        <div>
+          <label className="block text-xs text-[#6E564F] mb-1">Contraseña</label>
+          <input name="password" type="password" required className="w-full px-3 py-2 border border-[#E4D5C1] rounded-md text-sm text-[#261C19]" />
+        </div>
+        <button type="submit" className="w-full py-2.5 bg-[#A73832] text-white rounded-md text-sm font-medium hover:bg-[#8e2e28] transition-colors">
+          Entrar
+        </button>
+      </form>
+      <div className="mt-4 text-center space-y-2">
+        <Link href="/recuperar-contrasena" className="block text-xs text-[#D46240] hover:underline">¿Olvidaste tu contraseña?</Link>
+        <Link href={next ? `/registro?next=${encodeURIComponent(next)}` : '/registro'} className="block text-xs text-[#6E564F] hover:underline">¿No tienes cuenta? Regístrate</Link>
       </div>
+    </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FFF9F2] p-4">
+      <Suspense fallback={<div className="w-full max-w-sm bg-white p-8 rounded-2xl border border-[#E4D5C1]/70 shadow-sm text-center text-[#6E564F] text-sm">Cargando...</div>}>
+        <LoginForm />
+      </Suspense>
     </div>
   )
 }

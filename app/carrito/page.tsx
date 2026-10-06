@@ -261,15 +261,12 @@ export default function CartPage() {
           </p>
 
           <div className="space-y-3 pt-2">
-            <button
-              disabled
-              className="w-full px-6 py-3.5 rounded-md bg-[#A73832] text-white text-xs font-bold uppercase tracking-wider opacity-60 cursor-not-allowed shadow-2xs"
+            <Link
+              href="/checkout"
+              className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-md bg-[#A73832] hover:bg-[#8e2e28] text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs"
             >
               Continuar con mi pedido
-            </button>
-            <p className="text-[11px] text-[#A73832] text-center font-bold">
-              El checkout estará disponible en el siguiente paso.
-            </p>
+            </Link>
 
             <Link
               href="/productos"
