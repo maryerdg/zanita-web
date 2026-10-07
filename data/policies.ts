@@ -34,7 +34,7 @@ export const POLICIES: Record<string, Policy> = {
     sections: [
       {
         title: '1. Anticipación de Pedidos',
-        content: 'Todos los pedidos deben realizarse con un mínimo de 24 horas de anticipación para organizar la preparación y las rutas disponibles.',
+        content: 'Por regla general, los pedidos requieren un mínimo de 24 horas de anticipación. Algunas modalidades, fechas o puntos especiales pueden habilitar tiempos distintos según disponibilidad.',
       },
       {
         title: '2. Estado de los Términos',

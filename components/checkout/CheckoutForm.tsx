@@ -620,7 +620,7 @@ export default function CheckoutForm({
                             </p>
                           ) : isOther ? (
                             <p className="text-xs text-[#6E564F] mt-1">
-                              Entrega a domicilio fuera de puntos oficiales. Envío desde $50 MXN, según distancia.
+                              Entrega a domicilio fuera de puntos oficiales. El costo de entrega se definirá según tu ubicación.
                             </p>
                           ) : (
                             <p className="text-xs text-[#6E564F] mt-1">
@@ -679,7 +679,7 @@ export default function CheckoutForm({
                     </p>
                   )}
                   <p className="text-[11px] text-[#6E564F] italic">
-                    Envío desde $50 MXN, según distancia. Se confirmará el costo exacto al revisar tu pedido.
+                    El costo de entrega se determinará según tu ubicación y se confirmará dentro del proceso de tu pedido.
                   </p>
                 </div>
               )}

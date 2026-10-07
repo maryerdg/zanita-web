@@ -23,10 +23,15 @@
 -- =================================================================================
 
 -- ---------------------------------------------------------------------------------
--- 1. ELIMINAR SETTINGS OBSOLETOS
+-- 1. ELIMINAR SETTINGS OBSOLETOS Y ACTUALIZAR INSTRUCCIONES DE OTRA UBICACIÓN
 -- ---------------------------------------------------------------------------------
 DELETE FROM public.zanita_store_settings
 WHERE key IN ('order_submission_cutoff', 'cetys_pickup_schedule');
+
+-- Actualiza la redacción de 'Otra ubicación' para eliminar promesas obsoletas de precios ($50 MXN)
+UPDATE public.zanita_delivery_points
+SET instructions = 'Entrega a domicilio fuera de puntos oficiales. El costo de entrega se definirá según la ubicación.'
+WHERE id = 'dddd0008-0000-0000-0000-000000000000';
 
 -- ---------------------------------------------------------------------------------
 -- 2. ACTUALIZAR RPC: GET CHECKOUT AVAILABILITY

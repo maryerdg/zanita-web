@@ -32,9 +32,9 @@ INSERT INTO public.zanita_delivery_points (
   -- NOTA DE NEGOCIO: Representa pickup exclusivo para cuentas habilitadas, L-V 16:00 a 20:00. Sin costo de entrega.
   ('dddd0007-0000-0000-0000-000000000000', 'Pickup CETYS', 'Campus CETYS Universidad Tijuana', 'Disponible únicamente de lunes a viernes, de 4:00 p.m. a 8:00 p.m. para cuentas autorizadas.', 'special', false, 0, true, true, 7),
 
-  -- Otra Ubicación (A cotizar por distancia desde $50 MXN)
+  -- Otra Ubicación (A cotizar según ubicación)
   -- NOTA DE NEGOCIO: Requiere que el cliente escriba su dirección completa en el checkout.
-  ('dddd0008-0000-0000-0000-000000000000', 'Otra ubicación', NULL, 'Entrega a domicilio fuera de puntos oficiales. Envío desde $50 MXN, según distancia.', 'other', true, NULL, false, true, 8)
+  ('dddd0008-0000-0000-0000-000000000000', 'Otra ubicación', NULL, 'Entrega a domicilio fuera de puntos oficiales. El costo de entrega se definirá según la ubicación.', 'other', true, NULL, false, true, 8)
 ON CONFLICT (id) DO UPDATE SET
   name                               = EXCLUDED.name,
   address                            = EXCLUDED.address,
