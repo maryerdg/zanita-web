@@ -130,13 +130,13 @@ export default async function HomePage() {
                 <div className="absolute bottom-8 right-8 w-24 h-24 rounded-full bg-[#D46240]/20 pointer-events-none -z-0" />
 
                 {/* Central Emblem */}
-                <div className="relative w-36 h-36 my-auto z-10 transition-transform duration-500 hover:scale-105">
+                <div className="relative w-44 h-44 sm:w-48 sm:h-48 my-auto z-10 transition-transform duration-500 hover:scale-105">
                   <Image
                     src="/brand/logos/logo-vertical-red.webp"
                     alt="Zanita Emblem"
                     fill
                     className="object-contain"
-                    sizes="144px"
+                    sizes="(max-width: 640px) 176px, 192px"
                   />
                 </div>
 
@@ -309,19 +309,19 @@ export default async function HomePage() {
               </div>
               <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Entregas por Zona</h3>
               <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Entregas a domicilio en zonas oficiales (+$30 MXN extra) de lunes a viernes antes de 2:00 p.m., y sábados/domingos programados.
+                Entregas a domicilio en zonas oficiales con tarifa fija, programadas según la disponibilidad del servicio.
               </p>
             </div>
 
-            {/* CETYS Pickup */}
+            {/* Puntos Oficiales */}
             <div className="col-span-2 md:col-span-1 bg-white p-3 sm:p-4 md:p-6 rounded-xl border border-[#E4D5C1]/70 flex flex-row md:flex-col items-center md:items-start text-left gap-3 md:gap-0 md:space-y-3">
               <div className="w-7 h-7 md:w-10 md:h-10 shrink-0 rounded-full bg-[#4F7942]/10 text-[#4F7942] flex items-center justify-center">
                 <Clock className="w-3.5 h-3.5 md:w-5 md:h-5" />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Pickup Especial</h3>
+                <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Puntos Oficiales</h3>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Puntos de entrega especiales disponibles únicamente para clientes autorizados.
+                  Puntos de entrega estratégicos en Tijuana para recoger tu pedido sin costo de envío.
                 </p>
               </div>
             </div>

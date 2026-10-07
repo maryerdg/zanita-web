@@ -114,11 +114,11 @@ export default async function DeliveryPointsPage() {
             <ul className="space-y-3 text-xs md:text-sm text-[#6E564F]">
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#A73832] shrink-0 mt-1.5" />
-                <span><strong>Lunes a viernes (antes de las 2:00 p.m.):</strong> Entregas programadas en los puntos oficiales disponibles.</span>
+                <span><strong>Entregas programadas:</strong> Selecciona tu fecha y horario disponibles al finalizar tu pedido.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#4F7942] shrink-0 mt-1.5" />
-                <span><strong>Sábados y domingos:</strong> Entregas programadas bajo agenda y disponibilidad.</span>
+                <span><strong>Anticipación:</strong> Los pedidos requieren mínimo 24 horas de anticipación, salvo modalidades especiales disponibles.</span>
               </li>
             </ul>
           </div>
