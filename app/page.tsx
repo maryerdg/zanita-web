@@ -309,7 +309,7 @@ export default async function HomePage() {
               </div>
               <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Entregas por Zona</h3>
               <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Entregas a domicilio en zonas oficiales con tarifa fija, programadas según la disponibilidad del servicio.
+                Entrega a domicilio disponible según tu ubicación y la disponibilidad del servicio.
               </p>
             </div>
 

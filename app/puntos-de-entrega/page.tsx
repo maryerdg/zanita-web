@@ -78,7 +78,7 @@ export default async function DeliveryPointsPage() {
           <div className="pt-3 md:pt-4 border-t border-[#E4D5C1] space-y-1 md:space-y-2">
             <h3 className="font-serif font-bold text-sm text-[#D46240]">Otras ubicaciones</h3>
             <p className="text-xs text-[#6E564F] leading-relaxed">
-              Las entregas en ubicaciones fuera del listado oficial requieren cotización de envío, la cual oscila entre <strong>$50 MXN y $100 MXN</strong> según la distancia.
+              Si tu ubicación está fuera de nuestros puntos oficiales, podrás ingresarla al finalizar tu pedido para solicitar la cotización de entrega según tu zona.
             </p>
           </div>
         </div>
