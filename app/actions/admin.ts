@@ -186,17 +186,28 @@ export async function getAdminReadinessSummary(): Promise<{ summary?: ReadinessS
 // 2. AVAILABILITY RULES (HORARIO HABITUAL)
 // ============================================================================
 
+export type AvailabilityFixedSlotRow = {
+  id: string
+  availability_rule_id?: string | null
+  calendar_override_id?: string | null
+  slot_time: string
+  is_active: boolean
+  display_order: number
+}
+
 export type WeeklyRuleRow = {
   id: string
   delivery_mode: 'official_point' | 'home_delivery' | 'cetys_pickup'
   delivery_point_id: string | null
   day_of_week: number
+  schedule_type?: 'interval' | 'fixed_times'
   open_time: string
   close_time: string
   slot_interval_minutes: number | null
   min_lead_minutes: number
   submission_cutoff_time: string | null
   is_active: boolean
+  fixed_slots?: AvailabilityFixedSlotRow[]
 }
 
 export async function getWeeklyRules(deliveryMode?: string, deliveryPointId?: string | null) {
@@ -224,7 +235,41 @@ export async function getWeeklyRules(deliveryMode?: string, deliveryPointId?: st
     return { error: 'Error al consultar horarios' }
   }
 
-  return { rules: data as WeeklyRuleRow[] }
+  const rules = (data || []) as WeeklyRuleRow[]
+  const ruleIds = rules.map((r) => r.id).filter(Boolean)
+
+  if (ruleIds.length > 0) {
+    const { data: slotsData } = await auth.supabase
+      .from('zanita_availability_fixed_slots')
+      .select('*')
+      .in('availability_rule_id', ruleIds)
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .order('slot_time', { ascending: true })
+
+    if (slotsData) {
+      const slotsByRule: Record<string, AvailabilityFixedSlotRow[]> = {}
+      slotsData.forEach((slot) => {
+        if (!slot.availability_rule_id) return
+        if (!slotsByRule[slot.availability_rule_id]) {
+          slotsByRule[slot.availability_rule_id] = []
+        }
+        slotsByRule[slot.availability_rule_id].push({
+          id: slot.id,
+          availability_rule_id: slot.availability_rule_id,
+          slot_time: slot.slot_time.slice(0, 5),
+          is_active: slot.is_active,
+          display_order: slot.display_order,
+        })
+      })
+
+      rules.forEach((r) => {
+        r.fixed_slots = slotsByRule[r.id] || []
+      })
+    }
+  }
+
+  return { rules }
 }
 
 export async function saveWeeklyRule(rule: {
@@ -232,15 +277,19 @@ export async function saveWeeklyRule(rule: {
   delivery_mode: 'official_point' | 'home_delivery' | 'cetys_pickup'
   delivery_point_id?: string | null
   day_of_week: number
+  schedule_type?: 'interval' | 'fixed_times'
   open_time: string
   close_time: string
-  slot_interval_minutes: number
+  slot_interval_minutes?: number | null
   min_lead_minutes: number
   submission_cutoff_time?: string | null
   is_active: boolean
+  fixed_slots?: string[]
 }) {
   const auth = await verifyAdminCaller()
   if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
+
+  const scheduleType = rule.schedule_type || 'interval'
 
   // Validation
   if (rule.day_of_week < 1 || rule.day_of_week > 7) {
@@ -249,8 +298,14 @@ export async function saveWeeklyRule(rule: {
   if (!rule.open_time || !rule.close_time || rule.open_time >= rule.close_time) {
     return { error: 'La hora de apertura debe ser anterior a la hora de cierre' }
   }
-  if (!rule.slot_interval_minutes || rule.slot_interval_minutes <= 0) {
-    return { error: 'Se debe especificar un intervalo de pedidos válido en minutos (ej. 15, 30, 45, 60)' }
+  if (scheduleType === 'interval') {
+    if (!rule.slot_interval_minutes || rule.slot_interval_minutes <= 0) {
+      return { error: 'Se debe especificar un intervalo de pedidos válido en minutos (ej. 15, 30, 60)' }
+    }
+  } else if (scheduleType === 'fixed_times') {
+    if (!rule.fixed_slots || rule.fixed_slots.length === 0) {
+      return { error: 'Debes definir al menos un horario fijo para la modalidad de horas específicas' }
+    }
   }
   if (rule.min_lead_minutes < 0) {
     return { error: 'La anticipación mínima no puede ser negativa' }
@@ -260,20 +315,23 @@ export async function saveWeeklyRule(rule: {
     delivery_mode: rule.delivery_mode,
     delivery_point_id: rule.delivery_point_id || null,
     day_of_week: rule.day_of_week,
+    schedule_type: scheduleType,
     open_time: rule.open_time,
     close_time: rule.close_time,
-    slot_interval_minutes: rule.slot_interval_minutes,
+    slot_interval_minutes: scheduleType === 'interval' ? rule.slot_interval_minutes : null,
     min_lead_minutes: rule.min_lead_minutes,
     submission_cutoff_time: rule.submission_cutoff_time || null,
     is_active: rule.is_active,
   }
 
+  let ruleId = rule.id
   let error
-  if (rule.id) {
+
+  if (ruleId) {
     const res = await auth.supabase
       .from('zanita_availability_rules')
       .update(payload)
-      .eq('id', rule.id)
+      .eq('id', ruleId)
     error = res.error
   } else {
     // Check if active rule already exists for this (mode, point, dow)
@@ -293,22 +351,65 @@ export async function saveWeeklyRule(rule: {
     const { data: existing } = await dupCheck.maybeSingle()
 
     if (existing) {
+      ruleId = existing.id
       const res = await auth.supabase
         .from('zanita_availability_rules')
         .update(payload)
         .eq('id', existing.id)
       error = res.error
     } else {
-      const res = await auth.supabase
+      const { data: inserted, error: insErr } = await auth.supabase
         .from('zanita_availability_rules')
         .insert(payload)
-      error = res.error
+        .select('id')
+        .single()
+      error = insErr
+      ruleId = inserted?.id
     }
   }
 
   if (error) {
     console.error('Error saving weekly rule:', error)
     return { error: `No se pudo guardar el horario: ${error.message}` }
+  }
+
+  // Manage fixed slots if ruleId exists
+  if (ruleId) {
+    if (scheduleType === 'fixed_times' && rule.fixed_slots) {
+      // Clean and recreate fixed slots for this rule
+      await auth.supabase
+        .from('zanita_availability_fixed_slots')
+        .delete()
+        .eq('availability_rule_id', ruleId)
+
+      const slotsToInsert = rule.fixed_slots
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .sort()
+        .map((timeStr, idx) => ({
+          availability_rule_id: ruleId,
+          slot_time: timeStr.length === 5 ? `${timeStr}:00` : timeStr,
+          display_order: idx + 1,
+          is_active: true,
+        }))
+
+      if (slotsToInsert.length > 0) {
+        const { error: slotErr } = await auth.supabase
+          .from('zanita_availability_fixed_slots')
+          .insert(slotsToInsert)
+
+        if (slotErr) {
+          console.error('Error inserting fixed slots:', slotErr)
+          return { error: `Horario guardado pero hubo error en horarios fijos: ${slotErr.message}` }
+        }
+      }
+    } else if (scheduleType === 'interval') {
+      // Remove any fixed slots left over if switching to interval
+      await auth.supabase
+        .from('zanita_availability_fixed_slots')
+        .delete()
+        .eq('availability_rule_id', ruleId)
+    }
   }
 
   revalidatePath('/admin/disponibilidad')
@@ -345,6 +446,7 @@ export type CalendarOverrideRow = {
   delivery_mode: string
   delivery_point_id: string | null
   status: 'open' | 'closed' | 'custom_schedule' | 'stand_mode'
+  schedule_type?: 'interval' | 'fixed_times'
   open_time: string | null
   close_time: string | null
   slot_interval_minutes: number | null
@@ -352,6 +454,7 @@ export type CalendarOverrideRow = {
   submission_cutoff_time: string | null
   reason: string | null
   is_active: boolean
+  fixed_slots?: AvailabilityFixedSlotRow[]
 }
 
 export async function getCalendarOverrides(startDate?: string, endDate?: string) {
@@ -1052,4 +1155,54 @@ export async function toggleCetysPickup(userId: string, enabled: boolean) {
   revalidatePath('/admin/usuarios')
   revalidatePath('/admin')
   return { success: true, message: enabled ? 'Acceso CETYS habilitado' : 'Acceso CETYS deshabilitado' }
+}
+
+
+// ============================================================================
+// 7. OPERATIONAL SETTING: CROSS-ZONE TRANSITION BUFFER
+// ============================================================================
+
+export async function getCrossZoneTransitionBuffer() {
+  const auth = await verifyAdminCaller()
+  if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
+
+  const { data, error } = await auth.supabase
+    .from('zanita_store_settings')
+    .select('value')
+    .eq('key', 'cross_zone_transition_buffer_minutes')
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error fetching cross-zone transition buffer:', error)
+    return { error: 'Error al consultar tiempo de transición entre zonas' }
+  }
+
+  const minutes = typeof data?.value === 'number' ? data.value : 30
+  return { bufferMinutes: minutes }
+}
+
+export async function saveCrossZoneTransitionBuffer(minutes: number) {
+  const auth = await verifyAdminCaller()
+  if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
+
+  if (typeof minutes !== 'number' || isNaN(minutes) || minutes < 0 || minutes > 360) {
+    return { error: 'El tiempo de transición debe ser entre 0 y 360 minutos' }
+  }
+
+  const { error } = await auth.supabase
+    .from('zanita_store_settings')
+    .upsert({
+      key: 'cross_zone_transition_buffer_minutes',
+      value: minutes,
+      is_public: true,
+    })
+
+  if (error) {
+    console.error('Error saving cross-zone transition buffer:', error)
+    return { error: `No se pudo guardar la configuración: ${error.message}` }
+  }
+
+  revalidatePath('/admin/disponibilidad')
+  revalidatePath('/admin')
+  return { success: true, message: 'Tiempo de transición actualizado correctamente' }
 }

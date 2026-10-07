@@ -3,6 +3,7 @@ import {
   getCalendarOverrides,
   getAvailabilityBlocks,
   getOfficialDeliveryPoints,
+  getCrossZoneTransitionBuffer,
 } from '@/app/actions/admin'
 import AvailabilityClient from './AvailabilityClient'
 
@@ -20,11 +21,12 @@ export default async function AvailabilityAdminPage({ searchParams }: PageProps)
   const mode = params.mode || 'official_point'
   const action = params.action
 
-  const [rulesRes, overridesRes, blocksRes, pointsRes] = await Promise.all([
+  const [rulesRes, overridesRes, blocksRes, pointsRes, bufferRes] = await Promise.all([
     getWeeklyRules(),
     getCalendarOverrides(),
     getAvailabilityBlocks(),
     getOfficialDeliveryPoints(),
+    getCrossZoneTransitionBuffer(),
   ])
 
   return (
@@ -33,6 +35,7 @@ export default async function AvailabilityAdminPage({ searchParams }: PageProps)
       initialOverrides={overridesRes.overrides || []}
       initialBlocks={blocksRes.blocks || []}
       officialPoints={pointsRes.points || []}
+      initialBufferMinutes={bufferRes.bufferMinutes ?? 30}
       defaultMode={mode}
       defaultAction={action}
     />

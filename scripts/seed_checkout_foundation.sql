@@ -30,7 +30,7 @@ INSERT INTO public.zanita_delivery_points (
 
   -- Pickup Especial CETYS
   -- NOTA DE NEGOCIO: Representa pickup exclusivo para cuentas habilitadas, L-V 16:00 a 20:00. Sin costo de entrega.
-  ('dddd0007-0000-0000-0000-000000000000', 'Pickup CETYS', 'Campus CETYS Universidad Tijuana', 'Disponible únicamente de lunes a viernes, de 4:00 p.m. a 8:00 p.m. para cuentas autorizadas.', 'special', false, 0, true, true, 7),
+  ('dddd0007-0000-0000-0000-000000000000', 'Pickup CETYS', 'Campus CETYS Universidad Tijuana', 'Disponible únicamente de lunes a viernes en horarios específicos autorizados. Sin costo de entrega.', 'special', false, 0, true, true, 7),
 
   -- Otra Ubicación (A cotizar según ubicación)
   -- NOTA DE NEGOCIO: Requiere que el cliente escriba su dirección completa en el checkout.
@@ -50,7 +50,39 @@ ON CONFLICT (id) DO UPDATE SET
 -- 2. CONFIGURACIÓN BASE DE LA TIENDA (STORE SETTINGS)
 INSERT INTO public.zanita_store_settings (key, value, is_public) VALUES
   ('timezone', '"America/Tijuana"'::jsonb, true),
-  ('min_anticipation_hours', '24'::jsonb, true)
+  ('min_anticipation_hours', '24'::jsonb, true),
+  ('cross_zone_transition_buffer_minutes', '30'::jsonb, true)
 ON CONFLICT (key) DO UPDATE SET
   value     = EXCLUDED.value,
   is_public = EXCLUDED.is_public;
+
+
+-- 3. HORARIO BASE RECURRENTE CANÓNICO CETYS (Lunes a Viernes con Horarios Fijos: 15:40, 17:40, 19:40)
+-- NOTA PASS 8D.4: Puntos oficiales y entrega a domicilio NO se inventan; los configura Mena desde Admin.
+UPDATE public.zanita_availability_rules
+SET schedule_type = 'fixed_times',
+    slot_interval_minutes = NULL,
+    open_time = '15:40:00',
+    close_time = '19:40:00',
+    min_lead_minutes = 1440,
+    submission_cutoff_time = NULL,
+    is_active = true,
+    updated_at = now()
+WHERE delivery_mode = 'cetys_pickup'
+  AND day_of_week IN (1, 2, 3, 4, 5);
+
+INSERT INTO public.zanita_availability_fixed_slots (availability_rule_id, slot_time, display_order)
+SELECT r.id, s.slot_time, s.display_order
+FROM public.zanita_availability_rules r
+CROSS JOIN (
+  VALUES
+    ('15:40:00'::time, 1),
+    ('17:40:00'::time, 2),
+    ('19:40:00'::time, 3)
+) AS s(slot_time, display_order)
+WHERE r.delivery_mode = 'cetys_pickup'
+  AND r.day_of_week IN (1, 2, 3, 4, 5)
+  AND NOT EXISTS (
+    SELECT 1 FROM public.zanita_availability_fixed_slots existing
+    WHERE existing.availability_rule_id = r.id AND existing.slot_time = s.slot_time
+  );

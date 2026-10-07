@@ -36,3 +36,35 @@ export async function submitCheckoutOrder(payload: SubmitOrderPayload): Promise<
     };
   }
 }
+
+
+/**
+ * Server Action to fetch authoritative availability slots for checkout.
+ */
+export async function getCheckoutSlots(
+  deliveryMode: 'official_point' | 'home_delivery' | 'cetys_pickup',
+  deliveryPointId?: string | null,
+  startDate?: string,
+  daysAhead: number = 14
+) {
+  try {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase.rpc('get_checkout_availability', {
+      p_delivery_mode: deliveryMode,
+      p_delivery_point_id: deliveryPointId || null,
+      p_start_date: startDate || null,
+      p_days: daysAhead,
+    })
+
+    if (error) {
+      console.error('Error fetching checkout availability:', error)
+      return { error: 'Error al consultar disponibilidad del servicio' }
+    }
+
+    return { availability: data }
+  } catch (err: unknown) {
+    console.error('getCheckoutSlots exception:', err)
+    return { error: 'Error al consultar disponibilidad' }
+  }
+}
