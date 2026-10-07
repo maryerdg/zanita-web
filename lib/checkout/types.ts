@@ -29,7 +29,6 @@ export type StoreSettings = {
   timezone: string;
   minAnticipationHours: number;
   cetysPickupSchedule: CetysSchedule;
-  orderSubmissionCutoff: string;
 };
 
 export type SubmitOrderItemPayload = {

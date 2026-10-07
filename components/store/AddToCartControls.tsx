@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Minus, ShoppingBag, Check, MessageSquare } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, Check } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
-import { SITE_CONFIG } from '@/config/site';
 
 interface AddToCartControlsProps {
   product: { id: string; slug: string; name: string; price: number; photoSrc?: string | null; };
@@ -99,15 +98,7 @@ export function AddToCartControls({ product, requiresCustomization = false }: Ad
           Ver carrito
         </Link>
 
-        <a
-          href={`${SITE_CONFIG.whatsapp.url}?text=Hola%20Zanita%2C%20tengo%20una%20duda%20sobre%20${encodeURIComponent(product.name)}.`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-xs text-[#6E564F] hover:text-[#A73832] transition-colors"
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>¿Dudas? Contáctanos por WhatsApp</span>
-        </a>
+
       </div>
     </div>
   );

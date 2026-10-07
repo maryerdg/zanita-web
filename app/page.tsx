@@ -1,11 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SITE_CONFIG } from '@/config/site';
 import { getProducts, CatalogProduct } from "@/lib/catalog";
 import { getDisplayCatalogProducts } from '@/lib/catalog/presentation';
 import { ProductCard } from '@/components/store/ProductCard';
-import { ArrowRight, MessageSquare, Clock, MapPin, Calendar, Sparkles } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Calendar, Sparkles } from 'lucide-react';
 
 export default async function HomePage() {
   const FEATURED_SLUGS = [
@@ -88,7 +87,7 @@ export default async function HomePage() {
                 Manzanas, uvas, charolas y snacks preparados con chamoy y toppings.
               </p>
 
-              {/* CTAs - Refined Red/Cream WhatsApp CTA */}
+              {/* CTAs - Commerce Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2.5 sm:gap-4 pt-1 lg:pt-2">
                 <Link
                   href="/productos"
@@ -98,15 +97,12 @@ export default async function HomePage() {
                   <ArrowRight className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                 </Link>
 
-                <a
-                  href={SITE_CONFIG.whatsapp.urlWithMessage}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/puntos-de-entrega"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] lg:px-7 lg:py-3.5 text-[10px] lg:text-xs font-bold uppercase tracking-wider rounded-md border border-[#A73832] text-[#A73832] bg-[#F5EBDC] hover:bg-[#A73832] hover:text-[#F5EBDC] transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#A73832]/40"
                 >
-                  <MessageSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4 fill-current text-[#4F7942] group-hover:text-[#F5EBDC]" />
-                  <span>Pedir por WhatsApp</span>
-                </a>
+                  <span>Zonas y entregas</span>
+                </Link>
               </div>
 
               {/* Trust Badges */}
@@ -134,13 +130,13 @@ export default async function HomePage() {
                 <div className="absolute bottom-8 right-8 w-24 h-24 rounded-full bg-[#D46240]/20 pointer-events-none -z-0" />
 
                 {/* Central Emblem */}
-                <div className="relative w-36 h-36 my-auto z-10 transition-transform duration-500 hover:scale-105">
+                <div className="relative w-44 h-44 sm:w-48 sm:h-48 my-auto z-10 transition-transform duration-500 hover:scale-105">
                   <Image
                     src="/brand/logos/logo-vertical-red.webp"
                     alt="Zanita Emblem"
                     fill
                     className="object-contain"
-                    sizes="144px"
+                    sizes="(max-width: 640px) 176px, 192px"
                   />
                 </div>
 
@@ -313,19 +309,19 @@ export default async function HomePage() {
               </div>
               <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Entregas por Zona</h3>
               <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Entregas a domicilio en zonas oficiales (+$30 MXN extra) de lunes a viernes antes de 2:00 p.m., y sábados/domingos programados.
+                Entrega a domicilio disponible según tu ubicación y la disponibilidad del servicio.
               </p>
             </div>
 
-            {/* CETYS Pickup */}
+            {/* Puntos Oficiales */}
             <div className="col-span-2 md:col-span-1 bg-white p-3 sm:p-4 md:p-6 rounded-xl border border-[#E4D5C1]/70 flex flex-row md:flex-col items-center md:items-start text-left gap-3 md:gap-0 md:space-y-3">
               <div className="w-7 h-7 md:w-10 md:h-10 shrink-0 rounded-full bg-[#4F7942]/10 text-[#4F7942] flex items-center justify-center">
                 <Clock className="w-3.5 h-3.5 md:w-5 md:h-5" />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Pickup Especial</h3>
+                <h3 className="font-serif font-bold text-[11px] sm:text-sm md:text-lg text-[#261C19] leading-tight">Puntos Oficiales</h3>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-[#6E564F] leading-tight md:leading-relaxed">
-                Puntos de entrega especiales disponibles únicamente para clientes autorizados.
+                  Puntos de entrega estratégicos en Tijuana para recoger tu pedido sin costo de envío.
                 </p>
               </div>
             </div>
@@ -349,26 +345,24 @@ export default async function HomePage() {
           <div className="space-y-4 max-w-xl text-center md:text-left z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-bold tracking-wider uppercase text-[#F09CA9]">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Atención Personal por Ximena</span>
+              <span>PEDIDOS PROGRAMADOS</span>
             </div>
             <h2 className="font-serif font-bold text-xl sm:text-2xl md:text-4xl text-white leading-tight">
-              ¿Listo para coordinar tu pedido?
+              ¿Listo para armar tu pedido?
             </h2>
             <p className="text-xs sm:text-sm text-[#F09CA9] leading-relaxed">
-              Escríbenos directamente por WhatsApp para solicitar tu fecha de entrega o consultar detalles.
+              Elige tus productos, personalízalos y selecciona tu fecha y modalidad de entrega al finalizar.
             </p>
           </div>
 
           <div className="z-10 w-full sm:w-auto">
-            <a
-              href={SITE_CONFIG.whatsapp.urlWithMessage}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/productos"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-5 py-3 min-h-[44px] md:px-8 md:py-4 rounded-md border border-white text-white bg-[#A73832] hover:bg-white hover:text-[#A73832] transition-colors text-xs font-bold uppercase tracking-wider shadow-md"
             >
-              <MessageSquare className="w-4 h-4 fill-current text-[#4F7942]" />
-              <span>Pedir por WhatsApp</span>
-            </a>
+              <span>EMPEZAR PEDIDO</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
           {/* Background Decorative Accent */}

@@ -11,7 +11,6 @@ import {
   getMinAnticipationDateTime,
   isDateTimeAtLeast24Hours,
   validateCetysSchedule,
-  isOrderSubmissionCutoffReached,
   buildOrderPayload,
 } from '@/lib/checkout/validation';
 import {
@@ -173,12 +172,6 @@ export default function CheckoutForm({
   const isOtherLocation = selectedPoint?.type === 'other';
   const isCetys = selectedPoint?.requires_special_pickup_permission === true;
 
-  // Cutoff general (14:00 America/Tijuana): aplica a puntos estándar y otra ubicación. CETYS queda exento.
-  const isCutoffActive = !isCetys && isOrderSubmissionCutoffReached(
-    storeSettings.orderSubmissionCutoff || '14:00',
-    storeSettings.timezone || 'America/Tijuana'
-  );
-
   // Real-time schedule validation for CETYS
   const cetysValidation = isCetys
     ? validateCetysSchedule(requestedDate, requestedTime, storeSettings.cetysPickupSchedule)
@@ -200,13 +193,6 @@ export default function CheckoutForm({
     if (isSubmitting) return;
 
     setSubmitError(null);
-
-    // Validación de horario límite (Cutoff 14:00 Tijuana)
-    if (isCutoffActive) {
-      setSubmitError('Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
 
     const newErrors: Record<string, string> = {};
 
@@ -366,16 +352,6 @@ export default function CheckoutForm({
           Completa los datos de entrega y envía tu pedido para revisión.
         </p>
       </div>
-
-      {isCutoffActive && (
-        <div className="p-4 rounded-xl bg-[#FFF4E5] border border-[#F5D0A9] text-[#A75D28] text-xs sm:text-sm flex items-start gap-3 shadow-xs">
-          <Clock className="w-5 h-5 shrink-0 mt-0.5 text-[#A75D28]" />
-          <div className="space-y-0.5">
-            <p className="font-bold">Horario límite de recepción alcanzado</p>
-            <p>Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.</p>
-          </div>
-        </div>
-      )}
 
       {submitError && (
         <div className="p-4 rounded-xl bg-[#FFF0F0] border border-[#A73832]/30 text-[#A73832] text-xs sm:text-sm flex items-start gap-3 shadow-xs">
@@ -644,7 +620,7 @@ export default function CheckoutForm({
                             </p>
                           ) : isOther ? (
                             <p className="text-xs text-[#6E564F] mt-1">
-                              Entrega a domicilio fuera de puntos oficiales. Envío desde $50 MXN, según distancia.
+                              Entrega a domicilio fuera de puntos oficiales. El costo de entrega se definirá según tu ubicación.
                             </p>
                           ) : (
                             <p className="text-xs text-[#6E564F] mt-1">
@@ -703,7 +679,7 @@ export default function CheckoutForm({
                     </p>
                   )}
                   <p className="text-[11px] text-[#6E564F] italic">
-                    Envío desde $50 MXN, según distancia. Se confirmará el costo exacto al revisar tu pedido.
+                    El costo de entrega se determinará según tu ubicación y se confirmará dentro del proceso de tu pedido.
                   </p>
                 </div>
               )}
@@ -836,7 +812,7 @@ export default function CheckoutForm({
               <div className="space-y-3 pt-1">
                 <button
                   type="submit"
-                  disabled={isSubmitting || isCutoffActive}
+                  disabled={isSubmitting}
                   className="w-full py-4 rounded-md bg-[#A73832] hover:bg-[#8e2e28] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs md:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
@@ -844,22 +820,14 @@ export default function CheckoutForm({
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Enviando pedido...</span>
                     </span>
-                  ) : isCutoffActive ? (
-                    <span>Recepción cerrada por hoy</span>
                   ) : (
                     <span>Enviar pedido a revisión</span>
                   )}
                 </button>
 
-                {isCutoffActive ? (
-                  <p className="text-[11px] text-center font-medium text-[#A73832]">
-                    Por hoy ya cerramos la recepción de pedidos. Intenta nuevamente mañana.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-center text-[#6E564F]">
-                    No se realizará ningún cobro al enviar tu pedido.
-                  </p>
-                )}
+                <p className="text-[11px] text-center text-[#6E564F]">
+                  No se realizará ningún cobro al enviar tu pedido.
+                </p>
               </div>
             </div>
           </div>

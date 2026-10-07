@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { SITE_CONFIG } from '@/config/site';
 import { POLICIES, Policy } from '@/data/policies';
 import { Modal } from '@/components/ui/Modal';
-import { MapPin, MessageSquare } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg
@@ -114,22 +114,11 @@ export const Footer: React.FC = () => {
 
             {/* Official Contact */}
             <div className="space-y-3">
-              <h4 className="font-serif font-bold text-sm tracking-wider uppercase text-white">Contacto Oficial</h4>
+              <h4 className="font-serif font-bold text-sm tracking-wider uppercase text-white">ENCUÉNTRANOS</h4>
               <ul className="space-y-3 text-xs text-[#F09CA9]">
                 <li className="flex items-center gap-2 text-white">
                   <MapPin className="w-4 h-4 text-[#F09CA9] shrink-0" />
                   <span>Entregas programadas en Tijuana, B.C.</span>
-                </li>
-                <li>
-                  <a
-                    href={SITE_CONFIG.whatsapp.urlWithMessage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-white hover:text-[#F09CA9] transition-colors font-semibold"
-                  >
-                    <MessageSquare className="w-4 h-4 shrink-0 fill-current text-[#F09CA9]" />
-                    <span>WhatsApp: {SITE_CONFIG.whatsapp.display}</span>
-                  </a>
                 </li>
                 <li>
                   <a

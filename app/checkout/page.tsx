@@ -50,28 +50,21 @@ export default async function CheckoutPage() {
   const { data: rawSettings } = await supabase
     .from('zanita_store_settings')
     .select('key, value, is_public')
-    .in('key', ['timezone', 'min_anticipation_hours', 'cetys_pickup_schedule', 'order_submission_cutoff']);
+    .in('key', ['timezone', 'min_anticipation_hours']);
 
   const settingsMap = new Map<string, unknown>();
   (rawSettings || []).forEach((row) => {
     settingsMap.set(row.key, row.value);
   });
 
-  const cetysScheduleRaw = (settingsMap.get('cetys_pickup_schedule') || {}) as {
-    days?: number[];
-    start?: string;
-    end?: string;
-  };
-
   const storeSettings: StoreSettings = {
     timezone: (settingsMap.get('timezone') as string) || 'America/Tijuana',
     minAnticipationHours: (settingsMap.get('min_anticipation_hours') as number) || 24,
     cetysPickupSchedule: {
-      days: cetysScheduleRaw.days || [1, 2, 3, 4, 5],
-      start: cetysScheduleRaw.start || '16:00',
-      end: cetysScheduleRaw.end || '20:00',
+      days: [1, 2, 3, 4, 5],
+      start: '16:00',
+      end: '20:00',
     },
-    orderSubmissionCutoff: (settingsMap.get('order_submission_cutoff') as string) || '14:00',
   };
 
   return (
