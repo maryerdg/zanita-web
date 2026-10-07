@@ -16,7 +16,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Plus, Minus, ShoppingBag, Check, MessageSquare, AlertCircle, Info, ChevronDown, ChevronUp,
+  Plus, Minus, ShoppingBag, Check, AlertCircle, Info, ChevronDown, ChevronUp,
 } from 'lucide-react';
 
 import type { CatalogProduct, CatalogOptionGroup, CatalogOption } from '@/lib/catalog';
@@ -24,7 +24,6 @@ import type { SelectedOption } from '@/lib/catalog/validation';
 import { validateOptionGroup, validateAllGroups } from '@/lib/catalog/validation';
 import { calculateCustomizedPrice, calculateOptionExtraChargesCents } from '@/lib/catalog/pricing';
 import { useCart } from '@/contexts/CartContext';
-import { SITE_CONFIG } from '@/config/site';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -809,15 +808,7 @@ export function ProductCustomizer({ product, optionGroups }: ProductCustomizerPr
           >
             Ver carrito
           </Link>
-          <a
-            href={`${SITE_CONFIG.whatsapp.url}?text=Hola%20Zanita%2C%20tengo%20una%20duda%20sobre%20${encodeURIComponent(product.name)}.`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-[#6E564F] hover:text-[#A73832] transition-colors"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>¿Dudas? Contáctanos por WhatsApp</span>
-          </a>
+
         </div>
       </div>
     </div>
@@ -898,15 +889,7 @@ function SimpleAddToCart({ product }: { product: CatalogProduct }) {
         <Link href="/carrito" className="text-sm font-bold text-[#A73832] hover:underline">
           Ver carrito
         </Link>
-        <a
-          href={`${SITE_CONFIG.whatsapp.url}?text=Hola%20Zanita%2C%20tengo%20una%20duda%20sobre%20${encodeURIComponent(product.name)}.`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-xs text-[#6E564F] hover:text-[#A73832] transition-colors"
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>¿Dudas? Contáctanos por WhatsApp</span>
-        </a>
+
       </div>
     </div>
   );
