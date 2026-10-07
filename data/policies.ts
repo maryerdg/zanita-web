@@ -21,7 +21,7 @@ export const POLICIES: Record<string, Policy> = {
       },
       {
         title: '2. Recepción de Pedidos',
-        content: 'Los datos compartidos voluntariamente por los clientes mediante WhatsApp o Instagram son utilizados exclusivamente para la atención y coordinación de sus pedidos locales.',
+        content: 'Los datos compartidos voluntariamente por los clientes durante el proceso de pedido o atención son utilizados exclusivamente para la atención y coordinación de sus pedidos locales.',
       },
     ],
   },
@@ -34,7 +34,7 @@ export const POLICIES: Record<string, Policy> = {
     sections: [
       {
         title: '1. Anticipación de Pedidos',
-        content: 'Todos los pedidos deben realizarse con un mínimo de 3 días de anticipación para organizar la preparación y las rutas disponibles.',
+        content: 'Todos los pedidos deben realizarse con un mínimo de 24 horas de anticipación para organizar la preparación y las rutas disponibles.',
       },
       {
         title: '2. Estado de los Términos',
@@ -50,12 +50,12 @@ export const POLICIES: Record<string, Policy> = {
     summary: 'Información sobre tarifas de entrega por zona, horarios de recolección en CETYS y condiciones.',
     sections: [
       {
-        title: '1. Entregas en Zonas Oficiales ($30 MXN Extra)',
-        content: 'Las entregas en Alba Roja, Ermita, Las Palmas, Hipódromo, Las Ferias y Punto Medio tienen un costo adicional de $30 MXN. De lunes a viernes antes de las 2:00 p.m. se realiza la entrega a domicilio en estas zonas. Los sábados y domingos se manejan entregas programadas.',
+        title: '1. Entregas en Zonas Oficiales',
+        content: 'Las entregas a domicilio en zonas oficiales se programan según la disponibilidad del servicio y la ubicación indicada durante el proceso de pedido.',
       },
       {
         title: '2. Otras Zonas de Tijuana',
-        content: 'Para ubicaciones fuera del listado oficial se requiere cotización previa de envío, la cual oscila entre $50 MXN y $100 MXN según la distancia.',
+        content: 'Para ubicaciones fuera del listado oficial, la cotización de entrega se determina según la ubicación indicada durante el proceso de pedido.',
       },
       {
         title: '3. Puntos de Entrega Especiales',
