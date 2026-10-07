@@ -113,15 +113,17 @@ async function setup() {
 function testCetysBaselineUnconfigured() {
   console.log('2. Verifying Baseline CETYS State (No invented slot_interval)...');
 
-  // Baseline CETYS recurring rules have slot_interval_minutes = NULL.
-  // The availability engine MUST return status = 'configuration_required'
-  // and dates[i].reason = 'slot_interval_required'.
+  // To verify slot_interval_required fail-closed guard, temporarily set schedule_type = 'interval' and slot_interval_minutes = NULL.
   runSql(`
     DO $$
     DECLARE
       v_res jsonb;
       v_date0 jsonb;
     BEGIN
+      UPDATE public.zanita_availability_rules
+      SET schedule_type = 'interval', slot_interval_minutes = NULL
+      WHERE delivery_mode = 'cetys_pickup';
+
       PERFORM set_config('request.jwt.claim.sub', '${TEST_CETYS_USER_ID}', true);
       PERFORM set_config('request.jwt.claims', '{"sub":"${TEST_CETYS_USER_ID}","role":"authenticated"}', true);
       PERFORM set_config('zanita.test_current_time', '2026-10-05 10:00:00', true);
@@ -148,7 +150,7 @@ function testFutureOrderMatrixWithConfiguredQA() {
   // Configure recurring interval for testing future order semantics (temporarily 60m for QA)
   runSql(`
     UPDATE public.zanita_availability_rules
-    SET slot_interval_minutes = 60
+    SET schedule_type = 'interval', slot_interval_minutes = 60, open_time = '16:00:00', close_time = '20:00:00'
     WHERE delivery_mode = 'cetys_pickup';
   `);
 
@@ -241,7 +243,7 @@ function testFutureOrderMatrixWithConfiguredQA() {
   // Reset CETYS slot_interval_minutes back to NULL
   runSql(`
     UPDATE public.zanita_availability_rules
-    SET slot_interval_minutes = NULL
+    SET schedule_type = 'fixed_times', slot_interval_minutes = NULL, open_time = '15:40:00', close_time = '19:40:00'
     WHERE delivery_mode = 'cetys_pickup';
   `);
   console.log();

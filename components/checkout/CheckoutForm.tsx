@@ -17,7 +17,8 @@ import {
   getOrCreateIdempotencyKey,
   clearIdempotencyKey,
 } from '@/lib/checkout/idempotency';
-import { submitCheckoutOrder } from '@/app/actions/orders';
+import { submitCheckoutOrder, getCheckoutSlots } from '@/app/actions/orders';
+import { useEffect } from 'react';
 import {
   ArrowLeft,
   ShoppingBag,
@@ -145,6 +146,9 @@ export default function CheckoutForm({
   // Form State (Section 2: Requested Datetime)
   const [requestedDate, setRequestedDate] = useState(minDateStr);
   const [requestedTime, setRequestedTime] = useState(minTimeStr);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState<boolean>(false);
+  const [slotsDateStatus, setSlotsDateStatus] = useState<string | null>(null);
 
   // Form State (Section 3: Delivery Point & Address)
   // Filter active delivery points, hiding CETYS if profile is not authorized
@@ -171,6 +175,72 @@ export default function CheckoutForm({
   const selectedPoint = visibleDeliveryPoints.find((dp) => dp.id === selectedPointId);
   const isOtherLocation = selectedPoint?.type === 'other';
   const isCetys = selectedPoint?.requires_special_pickup_permission === true;
+
+  // Autoritative dynamic slot fetching from engine
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function fetchSlots() {
+      if (!requestedDate) {
+        setAvailableSlots([]);
+        setSlotsDateStatus(null);
+        return;
+      }
+
+      setIsLoadingSlots(true);
+
+      const mode = isCetys
+        ? 'cetys_pickup'
+        : isOtherLocation
+        ? 'home_delivery'
+        : 'official_point';
+
+      const pointId = mode === 'official_point' ? selectedPointId : null;
+
+      try {
+        const res = await getCheckoutSlots(mode, pointId, requestedDate, 1);
+        if (isCancelled) return;
+
+        if (res.availability?.dates && res.availability.dates.length > 0) {
+          const dateObj = res.availability.dates[0];
+          const slots: string[] = dateObj.available_slots || [];
+          setAvailableSlots(slots);
+          setSlotsDateStatus(dateObj.status || null);
+
+          // If current requestedTime is not in slots, auto-select first slot or clear
+          if (slots.length > 0) {
+            if (!slots.includes(requestedTime)) {
+              setRequestedTime(slots[0]);
+            }
+          } else {
+            setRequestedTime('');
+          }
+        } else {
+          setAvailableSlots([]);
+          setSlotsDateStatus(res.availability?.status || 'not_available');
+          setRequestedTime('');
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error('Error fetching available slots:', err);
+          setAvailableSlots([]);
+          setSlotsDateStatus('error');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingSlots(false);
+        }
+      }
+    }
+
+    fetchSlots();
+
+    return () => {
+      isCancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedDate, selectedPointId, isCetys, isOtherLocation]);
+
 
   // Real-time schedule validation for CETYS
   const cetysValidation = isCetys
@@ -519,23 +589,51 @@ export default function CheckoutForm({
                   <label htmlFor="requestedTime" className="block text-xs font-bold text-[#261C19] mb-1">
                     Hora solicitada <span className="text-[#A73832]">*</span>
                   </label>
-                  <input
-                    id="requestedTime"
-                    type="time"
-                    required
-                    value={requestedTime}
-                    onChange={(e) => {
-                      setRequestedTime(e.target.value);
-                      if (errors.requestedTime || errors.requestedDateTime) {
-                        setErrors({ ...errors, requestedTime: '', requestedDateTime: '' });
-                      }
-                    }}
-                    className={`w-full px-3.5 py-2.5 rounded-lg border text-sm text-[#261C19] bg-white transition-colors focus:outline-none ${
-                      errors.requestedTime || errors.requestedDateTime
-                        ? 'border-[#A73832] bg-[#FFF9F9]'
-                        : 'border-[#E4D5C1] focus:border-[#A73832]'
-                    }`}
-                  />
+                  {isLoadingSlots ? (
+                    <div className="py-2.5 px-3.5 text-xs text-[#6E564F] bg-[#FAF7F2] rounded-lg border border-[#E4D5C1] flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full border-2 border-[#A73832] border-t-transparent animate-spin" />
+                      Consultando horarios disponibles...
+                    </div>
+                  ) : availableSlots.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {availableSlots.map((slot) => {
+                          const isSelected = requestedTime === slot;
+                          return (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => {
+                                setRequestedTime(slot);
+                                if (errors.requestedTime || errors.requestedDateTime) {
+                                  setErrors({ ...errors, requestedTime: '', requestedDateTime: '' });
+                                }
+                              }}
+                              className={`py-2 px-2.5 rounded-lg text-xs font-semibold text-center border transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#A73832] text-white border-[#A73832] shadow-xs'
+                                  : 'bg-white text-[#261C19] border-[#E4D5C1] hover:border-[#A73832]/60 hover:bg-[#FAF7F2]'
+                              }`}
+                            >
+                              {slot}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <input type="hidden" name="requestedTime" value={requestedTime} />
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#E4D5C1] text-xs text-[#6E564F]">
+                      <p className="font-semibold text-[#261C19]">
+                        {slotsDateStatus === 'closed'
+                          ? 'Tienda cerrada en la fecha seleccionada.'
+                          : slotsDateStatus === 'cutoff_reached'
+                          ? 'Horario límite alcanzado para hoy.'
+                          : 'No quedan horarios disponibles para esta fecha.'}
+                      </p>
+                      <p className="text-[11px] mt-0.5">Prueba con otro día o modalidad de entrega.</p>
+                    </div>
+                  )}
                   {errors.requestedTime && (
                     <p className="text-xs text-[#A73832] mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" /> {errors.requestedTime}

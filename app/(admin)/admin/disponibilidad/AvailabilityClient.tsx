@@ -8,6 +8,7 @@ import {
   deleteCalendarOverride,
   saveAvailabilityBlock,
   deleteAvailabilityBlock,
+  saveCrossZoneTransitionBuffer,
   type WeeklyRuleRow,
   type CalendarOverrideRow,
   type AvailabilityBlockRow,
@@ -38,13 +39,14 @@ const DAYS_OF_WEEK = [
   { day: 7, name: 'Domingo' },
 ]
 
-const QUICK_INTERVALS = [15, 30, 45, 60]
+const QUICK_INTERVALS = [15, 30, 60]
 
 interface Props {
   initialRules: WeeklyRuleRow[]
   initialOverrides: CalendarOverrideRow[]
   initialBlocks: AvailabilityBlockRow[]
   officialPoints: DeliveryPointRow[]
+  initialBufferMinutes?: number
   defaultMode?: string
   defaultAction?: string
 }
@@ -60,6 +62,9 @@ interface DayScheduleRowProps {
 
 function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DayScheduleRowProps) {
   const [isActive, setIsActive] = useState<boolean>(rule?.is_active ?? false)
+  const [scheduleType, setScheduleType] = useState<'interval' | 'fixed_times'>(
+    rule?.schedule_type || 'interval'
+  )
 
   // Times
   const [openTime, setOpenTime] = useState<string>(rule?.open_time ? rule.open_time.slice(0, 5) : '')
@@ -67,13 +72,16 @@ function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DaySch
 
   // Intervals
   const extInterval = rule?.slot_interval_minutes ?? null
-  const isPresetInterval = extInterval !== null && [15, 30, 45, 60, 90, 120].includes(extInterval)
+  const isStandardInterval = extInterval !== null && [15, 30, 60].includes(extInterval)
+  const isLegacyInterval = extInterval !== null && !isStandardInterval
   const [intervalSelect, setIntervalSelect] = useState<string>(
-    extInterval === null ? '' : isPresetInterval ? String(extInterval) : 'custom'
+    extInterval === null ? '' : String(extInterval)
   )
-  const [customInterval, setCustomInterval] = useState<string>(
-    extInterval !== null && !isPresetInterval ? String(extInterval) : ''
-  )
+
+  // Fixed times
+  const initialFixedSlots = rule?.fixed_slots?.map((s) => s.slot_time.slice(0, 5)) || []
+  const [fixedSlots, setFixedSlots] = useState<string[]>(initialFixedSlots)
+  const [newSlotInput, setNewSlotInput] = useState<string>('')
 
   // Lead
   const extLeadMinutes = rule?.min_lead_minutes ?? null
@@ -90,13 +98,29 @@ function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DaySch
     rule?.submission_cutoff_time ? rule.submission_cutoff_time.slice(0, 5) : ''
   )
 
+  const handleAddFixedSlot = () => {
+    if (!newSlotInput) return
+    if (!fixedSlots.includes(newSlotInput)) {
+      setFixedSlots([...fixedSlots, newSlotInput].sort())
+    }
+    setNewSlotInput('')
+  }
+
+  const handleRemoveFixedSlot = (slotToRemove: string) => {
+    setFixedSlots(fixedSlots.filter((s) => s !== slotToRemove))
+  }
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
     const formData = new FormData(form)
 
-    if (intervalSelect === 'custom') {
-      formData.set('slot_interval_minutes', customInterval)
+    formData.set('schedule_type', scheduleType)
+
+    if (scheduleType === 'interval') {
+      formData.set('slot_interval_minutes', intervalSelect)
+    } else {
+      formData.set('fixed_slots_json', JSON.stringify(fixedSlots))
     }
 
     onSave(day, formData)
@@ -111,28 +135,56 @@ function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DaySch
           : 'bg-[#FAF7F2]/60 border-[#F2ECE1] opacity-75'
       }`}
     >
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* Day header & Active toggle */}
-        <div className="flex items-center space-x-3 min-w-[140px]">
-          <input
-            type="checkbox"
-            id={`day-${day}-active`}
-            name="is_active"
-            checked={isActive}
-            onChange={(e) => setIsActive(e.target.checked)}
-            className="w-4 h-4 rounded text-[#A73832] border-[#E8DCC4] focus:ring-[#A73832] cursor-pointer"
-          />
-          <label htmlFor={`day-${day}-active`} className="font-semibold text-sm text-[#261C19] cursor-pointer">
-            {name}
-          </label>
+      <div className="flex flex-col gap-4">
+        {/* Row Header: Active Toggle & Schedule Strategy Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F2ECE1] pb-3">
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id={`day-${day}-active`}
+              name="is_active"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="w-4 h-4 rounded text-[#A73832] border-[#E8DCC4] focus:ring-[#A73832] cursor-pointer"
+            />
+            <label htmlFor={`day-${day}-active`} className="font-semibold text-base text-[#261C19] cursor-pointer">
+              {name}
+            </label>
+          </div>
+
+          {/* Strategy Toggle */}
+          <div className="flex items-center space-x-1 bg-[#FAF7F2] p-1 rounded-xl border border-[#E8DCC4]/60 text-xs">
+            <button
+              type="button"
+              onClick={() => setScheduleType('interval')}
+              className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                scheduleType === 'interval'
+                  ? 'bg-white text-[#261C19] shadow-2xs font-semibold'
+                  : 'text-[#6E564F] hover:text-[#261C19]'
+              }`}
+            >
+              Cada cierto tiempo
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleType('fixed_times')}
+              className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                scheduleType === 'fixed_times'
+                  ? 'bg-white text-[#261C19] shadow-2xs font-semibold'
+                  : 'text-[#6E564F] hover:text-[#261C19]'
+              }`}
+            >
+              Horas específicas
+            </button>
+          </div>
         </div>
 
         {/* Operational Settings Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Time Window */}
           <div>
             <span className="text-[10px] font-semibold text-[#6E564F] uppercase tracking-wider block mb-1">
-              Horario de entregas
+              Rango horario
             </span>
             <div className="flex items-center space-x-1">
               <input
@@ -157,49 +209,84 @@ function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DaySch
             </div>
           </div>
 
-          {/* Slot Interval */}
-          <div>
-            <span className="text-[10px] font-semibold text-[#6E564F] uppercase tracking-wider block mb-1">
-              Intervalo de pedidos
-            </span>
-            <div className="space-y-1">
-              <select
-                name="slot_interval_minutes"
-                value={intervalSelect}
-                onChange={(e) => setIntervalSelect(e.target.value)}
-                aria-label={`Intervalo de pedidos para ${name}`}
-                className={`w-full text-xs border rounded-lg px-2 py-1.5 bg-[#FAF7F2] text-[#261C19] ${
-                  isActive && !intervalSelect ? 'border-amber-400 bg-amber-50/50' : 'border-[#E8DCC4]'
-                }`}
-              >
-                <option value="">⚠️ Elegir intervalo...</option>
-                {QUICK_INTERVALS.map((mins) => (
-                  <option key={mins} value={mins}>
-                    Cada {mins} minutos
-                  </option>
-                ))}
-                <option value="90">Cada 90 minutos</option>
-                <option value="120">Cada 2 horas</option>
-                <option value="custom">Personalizado...</option>
-              </select>
-
-              {intervalSelect === 'custom' && (
+          {/* Strategy Specific Field: Interval OR Fixed Times */}
+          {scheduleType === 'interval' ? (
+            <div>
+              <span className="text-[10px] font-semibold text-[#6E564F] uppercase tracking-wider block mb-1">
+                Intervalo de pedidos
+              </span>
+              <div className="space-y-1">
+                <select
+                  name="slot_interval_minutes"
+                  value={intervalSelect}
+                  onChange={(e) => setIntervalSelect(e.target.value)}
+                  aria-label={`Intervalo de pedidos para ${name}`}
+                  className={`w-full text-xs border rounded-lg px-2 py-1.5 bg-[#FAF7F2] text-[#261C19] ${
+                    isActive && !intervalSelect ? 'border-amber-400 bg-amber-50/50' : 'border-[#E8DCC4]'
+                  }`}
+                >
+                  <option value="">⚠️ Elegir intervalo...</option>
+                  {QUICK_INTERVALS.map((mins) => (
+                    <option key={mins} value={mins}>
+                      Cada {mins} minutos
+                    </option>
+                  ))}
+                  {isLegacyInterval && (
+                    <option value={String(extInterval)}>
+                      Cada {extInterval} min (anterior)
+                    </option>
+                  )}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <span className="text-[10px] font-semibold text-[#6E564F] uppercase tracking-wider block mb-1">
+                Horas fijas de entrega
+              </span>
+              <div className="space-y-1.5">
                 <div className="flex items-center space-x-1">
                   <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={customInterval}
-                    onChange={(e) => setCustomInterval(e.target.value)}
-                    placeholder="Minutos (ej. 20)"
-                    aria-label={`Intervalo personalizado en minutos para ${name}`}
-                    className="w-full text-xs bg-white border border-[#E8DCC4] rounded-lg px-2 py-1 text-[#261C19]"
+                    type="time"
+                    value={newSlotInput}
+                    onChange={(e) => setNewSlotInput(e.target.value)}
+                    placeholder="--:--"
+                    aria-label={`Agregar hora fija para ${name}`}
+                    className="w-full text-xs bg-[#FAF7F2] border border-[#E8DCC4] rounded-lg px-2 py-1 text-[#261C19]"
                   />
-                  <span className="text-[10px] text-[#6E564F]">min</span>
+                  <button
+                    type="button"
+                    onClick={handleAddFixedSlot}
+                    className="px-2 py-1 bg-[#261C19] text-white rounded-lg text-xs hover:bg-[#A73832] transition-colors cursor-pointer"
+                  >
+                    +
+                  </button>
                 </div>
-              )}
+                {fixedSlots.length === 0 ? (
+                  <p className="text-[10px] text-amber-700 italic">Sin horarios fijos agregados</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {fixedSlots.map((slot) => (
+                      <span
+                        key={slot}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] bg-[#FAF7F2] border border-[#E8DCC4] text-[#261C19] font-medium"
+                      >
+                        {slot}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFixedSlot(slot)}
+                          className="ml-1 text-[#6E564F] hover:text-red-700 cursor-pointer"
+                          aria-label={`Eliminar hora fija ${slot}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Minimum Lead Time */}
           <div>
@@ -261,20 +348,20 @@ function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DaySch
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-2 justify-end pt-2 lg:pt-0">
+        <div className="flex items-center space-x-2 justify-end pt-2 border-t border-[#F2ECE1]">
           <button
             type="submit"
             disabled={isPending}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#261C19] text-white hover:bg-[#A73832] transition-colors shadow-xs cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#261C19] text-white hover:bg-[#A73832] transition-colors shadow-xs cursor-pointer"
           >
-            Guardar
+            Guardar {name}
           </button>
           {rule && onDelete && (
             <button
               type="button"
               onClick={() => onDelete(rule.id)}
               disabled={isPending}
-              className="p-1.5 text-[#6E564F] hover:text-red-700 transition-colors cursor-pointer"
+              className="p-2 text-[#6E564F] hover:text-red-700 transition-colors cursor-pointer"
               title="Eliminar regla"
             >
               <Trash2 className="w-4 h-4" />
@@ -291,6 +378,7 @@ export default function AvailabilityClient({
   initialOverrides,
   initialBlocks,
   officialPoints,
+  initialBufferMinutes = 30,
   defaultMode = 'official_point',
   defaultAction,
 }: Props) {
@@ -302,6 +390,8 @@ export default function AvailabilityClient({
   const [rules, setRules] = useState<WeeklyRuleRow[]>(initialRules)
   const [overrides, setOverrides] = useState<CalendarOverrideRow[]>(initialOverrides)
   const [blocks, setBlocks] = useState<AvailabilityBlockRow[]>(initialBlocks)
+  const [bufferMinutes, setBufferMinutes] = useState<number>(initialBufferMinutes)
+  const [savingBuffer, setSavingBuffer] = useState<boolean>(false)
 
   const [isPending, startTransition] = useTransition()
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -400,13 +490,22 @@ export default function AvailabilityClient({
   // ==========================================================================
   const handleSaveDaySchedule = (dayOfWeek: number, formData: FormData) => {
     const isActive = formData.get('is_active') === 'on'
+    const scheduleType = (formData.get('schedule_type') as 'interval' | 'fixed_times') || 'interval'
     const openTime = (formData.get('open_time') as string)?.trim() || ''
     const closeTime = (formData.get('close_time') as string)?.trim() || ''
     const intervalStr = (formData.get('slot_interval_minutes') as string)?.trim() || ''
+    const fixedSlotsJson = (formData.get('fixed_slots_json') as string)?.trim() || '[]'
     const leadValStr = (formData.get('lead_value') as string)?.trim() || ''
     const leadUnit = formData.get('lead_unit') as string
     const useCutoff = formData.get('use_cutoff') === 'on'
     const cutoffTime = useCutoff ? ((formData.get('submission_cutoff_time') as string)?.trim() || null) : null
+
+    let parsedFixedSlots: string[] = []
+    try {
+      parsedFixedSlots = JSON.parse(fixedSlotsJson)
+    } catch {
+      parsedFixedSlots = []
+    }
 
     const slotInterval = intervalStr ? parseInt(intervalStr, 10) : null
     const leadVal = leadValStr !== '' ? Number(leadValStr) : null
@@ -420,9 +519,16 @@ export default function AvailabilityClient({
         showNotification('error', 'La hora de inicio debe ser anterior a la hora de cierre')
         return
       }
-      if (!slotInterval || isNaN(slotInterval) || slotInterval <= 0) {
-        showNotification('error', 'Debes definir un intervalo de pedidos válido mayor a 0 (ej. 15, 30, 45 min)')
-        return
+      if (scheduleType === 'interval') {
+        if (!slotInterval || isNaN(slotInterval) || slotInterval <= 0) {
+          showNotification('error', 'Debes definir un intervalo de pedidos válido (ej. 15, 30, 60 min)')
+          return
+        }
+      } else {
+        if (parsedFixedSlots.length === 0) {
+          showNotification('error', 'Debes agregar al menos un horario fijo (ej. 15:40) para este día')
+          return
+        }
       }
       if (leadVal === null || isNaN(leadVal) || leadVal < 0) {
         showNotification('error', 'Debes definir una anticipación mínima válida en horas o minutos')
@@ -432,30 +538,28 @@ export default function AvailabilityClient({
         showNotification('error', 'Debes especificar la hora límite (cutoff) o desmarcar la casilla')
         return
       }
-      const existingRule = currentRules.find((r) => r.day_of_week === dayOfWeek)
-      if (!existingRule) {
-        showNotification('error', 'Para guardar este día en el horario habitual, márcalo como activo e ingresa sus datos.')
-        return
-      }
     }
 
     const existingRule = currentRules.find((r) => r.day_of_week === dayOfWeek)
-    const finalSlotInterval = slotInterval || existingRule?.slot_interval_minutes || 30
+    const finalSlotInterval = scheduleType === 'interval' ? (slotInterval || existingRule?.slot_interval_minutes || 30) : null
     const finalOpenTime = openTime || existingRule?.open_time || '00:00:00'
     const finalCloseTime = closeTime || existingRule?.close_time || '00:00:00'
     const minLeadMinutes = leadVal !== null ? (leadUnit === 'hours' ? leadVal * 60 : leadVal) : (existingRule?.min_lead_minutes ?? 1440)
 
     startTransition(async () => {
       const res = await saveWeeklyRule({
+        id: existingRule?.id,
         delivery_mode: selectedMode,
         delivery_point_id: selectedMode === 'official_point' && selectedPointId !== 'all' ? selectedPointId : null,
         day_of_week: dayOfWeek,
+        schedule_type: scheduleType,
         open_time: finalOpenTime,
         close_time: finalCloseTime,
         slot_interval_minutes: finalSlotInterval,
         min_lead_minutes: minLeadMinutes,
         submission_cutoff_time: cutoffTime,
         is_active: isActive,
+        fixed_slots: scheduleType === 'fixed_times' ? parsedFixedSlots : undefined,
       })
 
       if (res.error) {
@@ -469,16 +573,23 @@ export default function AvailabilityClient({
             (r) => !(r.delivery_mode === selectedMode && r.day_of_week === dayOfWeek && r.delivery_point_id === pointTarget)
           )
           next.push({
-            id: `opt-${Date.now()}`,
+            id: existingRule?.id || `opt-${Date.now()}`,
             delivery_mode: selectedMode,
             delivery_point_id: pointTarget,
             day_of_week: dayOfWeek,
+            schedule_type: scheduleType,
             open_time: finalOpenTime,
             close_time: finalCloseTime,
             slot_interval_minutes: finalSlotInterval,
             min_lead_minutes: minLeadMinutes,
             submission_cutoff_time: cutoffTime,
             is_active: isActive,
+            fixed_slots: scheduleType === 'fixed_times' ? parsedFixedSlots.map((t) => ({
+              id: `slot-${Date.now()}-${t}`,
+              slot_time: t,
+              is_active: true,
+              display_order: 1,
+            })) : [],
           })
           return next
         })
@@ -749,6 +860,50 @@ export default function AvailabilityClient({
           >
             <Clock className="w-3.5 h-3.5 mr-1.5 text-[#D46240]" />
             Bloquear Horario
+          </button>
+        </div>
+      </div>
+
+      {/* OPERATIONAL SETTING: TRANSITION BUFFER BETWEEN OFFICIAL ZONES */}
+      <div className="bg-white rounded-2xl border border-[#E8DCC4] shadow-xs p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-serif font-bold text-[#261C19] flex items-center">
+            <Clock className="w-4 h-4 mr-2 text-[#A73832]" />
+            Tiempo mínimo entre entregas en zonas distintas (Buffer de Transición)
+          </h2>
+          <p className="text-xs text-[#6E564F] mt-0.5">
+            Margen de traslado requerido entre pedidos de zonas oficiales diferentes (ej. Ermita vs Hipódromo).
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2 shrink-0">
+          <input
+            type="number"
+            min="0"
+            max="180"
+            step="5"
+            value={bufferMinutes}
+            onChange={(e) => setBufferMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+            className="w-20 text-xs bg-[#FAF7F2] border border-[#E8DCC4] rounded-lg px-2.5 py-1.5 text-[#261C19] font-semibold text-center"
+            aria-label="Minutos de buffer entre zonas distintas"
+          />
+          <span className="text-xs text-[#6E564F]">minutos</span>
+          <button
+            type="button"
+            disabled={savingBuffer}
+            onClick={async () => {
+              setSavingBuffer(true)
+              const res = await saveCrossZoneTransitionBuffer(bufferMinutes)
+              setSavingBuffer(false)
+              if (res.error) {
+                showNotification('error', res.error)
+              } else {
+                showNotification('success', res.message || 'Configuración guardada')
+              }
+            }}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#261C19] text-white hover:bg-[#A73832] transition-colors shadow-xs cursor-pointer"
+          >
+            {savingBuffer ? 'Guardando...' : 'Actualizar'}
           </button>
         </div>
       </div>
@@ -1144,23 +1299,8 @@ export default function AvailabilityClient({
                         <option value="">Seleccionar...</option>
                         <option value="15">Cada 15 min</option>
                         <option value="30">Cada 30 min</option>
-                        <option value="45">Cada 45 min</option>
                         <option value="60">Cada 60 min</option>
-                        <option value="custom">Personalizado...</option>
                       </select>
-
-                      {overrideInterval === 'custom' && (
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={overrideIntervalCustom}
-                          onChange={(e) => setOverrideIntervalCustom(e.target.value)}
-                          placeholder="Minutos (ej. 20)"
-                          aria-label="Intervalo personalizado en minutos para excepción"
-                          className="w-full text-xs bg-white border border-[#E8DCC4] rounded-lg px-2 py-1 text-[#261C19] mt-1"
-                        />
-                      )}
                     </div>
                     <div>
                       <span className="text-[10px] font-semibold text-[#6E564F] uppercase tracking-wider block mb-1">
@@ -1363,23 +1503,8 @@ export default function AvailabilityClient({
                     <option value="">Seleccionar...</option>
                     <option value="15">Cada 15 min</option>
                     <option value="30">Cada 30 min</option>
-                    <option value="45">Cada 45 min</option>
                     <option value="60">Cada 60 min</option>
-                    <option value="custom">Personalizado...</option>
                   </select>
-
-                  {standInterval === 'custom' && (
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={standIntervalCustom}
-                      onChange={(e) => setStandIntervalCustom(e.target.value)}
-                      placeholder="Minutos (ej. 20)"
-                      aria-label="Intervalo personalizado en minutos para stand"
-                      className="w-full text-xs bg-white border border-[#E8DCC4] rounded-lg px-2 py-1 text-[#261C19] mt-1"
-                    />
-                  )}
                 </div>
               </div>
 
