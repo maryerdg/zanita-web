@@ -82,7 +82,7 @@ export async function getAdminReadinessSummary(): Promise<{ summary?: ReadinessS
     // 2. Active availability rules
     const { data: rules } = await supabase
       .from('zanita_availability_rules')
-      .select('delivery_mode, delivery_point_id, slot_interval_minutes, is_active')
+      .select('id, delivery_mode, delivery_point_id, schedule_type, slot_interval_minutes, is_active')
       .eq('is_active', true)
 
     const activeRules = rules || []
@@ -113,10 +113,32 @@ export async function getAdminReadinessSummary(): Promise<{ summary?: ReadinessS
     const activeTiersCount = (pricingRules || []).length
     const pricingIsConfigured = hasKitchenLocation && activeTiersCount > 0
 
-    // 5. CETYS pickup rules
+    // 5. CETYS pickup rules (supports either interval or fixed_times)
     const cetysRules = activeRules.filter((r) => r.delivery_mode === 'cetys_pickup')
-    const cetysHasInterval = cetysRules.some((r) => r.slot_interval_minutes && r.slot_interval_minutes > 0)
-    const cetysIsReady = cetysRules.length > 0 && cetysHasInterval
+    const cetysRuleIds = cetysRules.map((r) => r.id).filter(Boolean)
+    let cetysHasConfiguredSchedule = false
+
+    if (cetysRules.length > 0) {
+      const hasValidInterval = cetysRules.some(
+        (r) => r.schedule_type !== 'fixed_times' && r.slot_interval_minutes && r.slot_interval_minutes > 0
+      )
+      const hasFixedTimes = cetysRules.some((r) => r.schedule_type === 'fixed_times')
+
+      if (hasFixedTimes) {
+        const { data: fixedSlots } = await supabase
+          .from('zanita_availability_fixed_slots')
+          .select('id')
+          .in('availability_rule_id', cetysRuleIds)
+          .eq('is_active', true)
+          .limit(1)
+
+        cetysHasConfiguredSchedule = hasValidInterval || Boolean(fixedSlots && fixedSlots.length > 0)
+      } else {
+        cetysHasConfiguredSchedule = hasValidInterval
+      }
+    }
+
+    const cetysIsReady = cetysRules.length > 0 && cetysHasConfiguredSchedule
 
     const summary: ReadinessSummary = {
       officialPoints: {
@@ -166,12 +188,12 @@ export async function getAdminReadinessSummary(): Promise<{ summary?: ReadinessS
           ? 'Configurado'
           : cetysRules.length === 0
           ? 'Falta definir horarios'
-          : !cetysHasInterval
-          ? 'Falta elegir intervalo'
+          : !cetysHasConfiguredSchedule
+          ? 'Falta configurar horarios o intervalo'
           : 'Incompleto',
-        detail: cetysRules.length > 0 ? `${cetysRules.length} días activos (16:00–20:00)` : 'Sin reglas de pickup CETYS',
+        detail: cetysRules.length > 0 ? `${cetysRules.length} días activos configurados` : 'Sin reglas de pickup CETYS',
         hasRules: cetysRules.length > 0,
-        hasInterval: cetysHasInterval,
+        hasInterval: cetysHasConfiguredSchedule,
       },
     }
 
@@ -222,10 +244,12 @@ export async function getWeeklyRules(deliveryMode?: string, deliveryPointId?: st
     query = query.eq('delivery_mode', deliveryMode)
   }
 
-  if (deliveryPointId) {
-    query = query.eq('delivery_point_id', deliveryPointId)
-  } else {
-    query = query.is('delivery_point_id', null)
+  if (deliveryPointId !== undefined) {
+    if (deliveryPointId === null) {
+      query = query.is('delivery_point_id', null)
+    } else {
+      query = query.eq('delivery_point_id', deliveryPointId)
+    }
   }
 
   const { data, error } = await query.order('day_of_week', { ascending: true })

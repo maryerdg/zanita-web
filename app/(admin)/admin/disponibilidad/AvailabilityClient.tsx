@@ -299,7 +299,7 @@ function DayScheduleRow({ day, name, rule, isPending, onSave, onDelete }: DaySch
                 name="lead_value"
                 value={leadVal}
                 onChange={(e) => setLeadVal(e.target.value)}
-                placeholder="24"
+                placeholder="Ej. 24"
                 min="0"
                 aria-label={`Valor de anticipación mínima para ${name}`}
                 className="w-20 text-xs bg-[#FAF7F2] border border-[#E8DCC4] rounded-lg px-2 py-1.5 text-[#261C19]"
@@ -546,11 +546,16 @@ export default function AvailabilityClient({
     const finalCloseTime = closeTime || existingRule?.close_time || '00:00:00'
     const minLeadMinutes = leadVal !== null ? (leadUnit === 'hours' ? leadVal * 60 : leadVal) : (existingRule?.min_lead_minutes ?? 1440)
 
+    const targetDeliveryPointId =
+      selectedMode === 'official_point'
+        ? (selectedPointId !== 'all' ? selectedPointId : null)
+        : (existingRule?.delivery_point_id ?? null)
+
     startTransition(async () => {
       const res = await saveWeeklyRule({
         id: existingRule?.id,
         delivery_mode: selectedMode,
-        delivery_point_id: selectedMode === 'official_point' && selectedPointId !== 'all' ? selectedPointId : null,
+        delivery_point_id: targetDeliveryPointId,
         day_of_week: dayOfWeek,
         schedule_type: scheduleType,
         open_time: finalOpenTime,
@@ -568,14 +573,13 @@ export default function AvailabilityClient({
         showNotification('success', res.message || 'Horario guardado')
         // Optimistic update
         setRules((prev) => {
-          const pointTarget = selectedMode === 'official_point' && selectedPointId !== 'all' ? selectedPointId : null
           const next = prev.filter(
-            (r) => !(r.delivery_mode === selectedMode && r.day_of_week === dayOfWeek && r.delivery_point_id === pointTarget)
+            (r) => !(r.delivery_mode === selectedMode && r.day_of_week === dayOfWeek && r.delivery_point_id === targetDeliveryPointId)
           )
           next.push({
             id: existingRule?.id || `opt-${Date.now()}`,
             delivery_mode: selectedMode,
-            delivery_point_id: pointTarget,
+            delivery_point_id: targetDeliveryPointId,
             day_of_week: dayOfWeek,
             schedule_type: scheduleType,
             open_time: finalOpenTime,
@@ -994,11 +998,10 @@ export default function AvailabilityClient({
           <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#E8DCC4] text-xs text-[#6E564F] space-y-1">
             <p className="font-semibold text-[#261C19] flex items-center">
               <Info className="w-4 h-4 mr-1 text-[#A73832]" />
-              Política habitual CETYS:
+              Configuración de Pickup CETYS:
             </p>
-            <p>Lunes a Viernes de 16:00 a 20:00 (4:00 PM – 8:00 PM), 24h anticipación, sin límite de cutoff.</p>
-            <p className="text-[#A73832] font-medium">
-              Asegúrate de definir el intervalo de pedidos para que las franjas sean elegibles en Checkout.
+            <p>
+              Define los días activos, el tipo de horario (horas fijas o intervalos) y el tiempo mínimo de anticipación para las entregas a la comunidad CETYS.
             </p>
           </div>
         )}
@@ -1007,10 +1010,11 @@ export default function AvailabilityClient({
         <div className="space-y-4">
           {DAYS_OF_WEEK.map(({ day, name }) => {
             const rule = currentRules.find((r) => r.day_of_week === day)
+            const fixedSlotsStr = (rule?.fixed_slots || []).map((s) => s.slot_time).join(',')
 
             return (
               <DayScheduleRow
-                key={`${day}-${selectedMode}-${selectedPointId}-${rule?.id || 'none'}-${rule?.open_time || ''}-${rule?.close_time || ''}-${rule?.slot_interval_minutes || ''}-${rule?.is_active ?? false}`}
+                key={`${day}-${selectedMode}-${selectedPointId}-${rule?.id || 'none'}-${rule?.schedule_type || 'interval'}-${rule?.open_time || ''}-${rule?.close_time || ''}-${rule?.slot_interval_minutes || ''}-${rule?.min_lead_minutes ?? ''}-${fixedSlotsStr}-${rule?.is_active ?? false}`}
                 day={day}
                 name={name}
                 rule={rule}
