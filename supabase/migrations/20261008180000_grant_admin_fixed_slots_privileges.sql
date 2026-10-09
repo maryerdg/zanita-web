@@ -1,18 +1,20 @@
 -- =================================================================================
--- MIGRATION: PASS 8D.5D — GRANT ADMIN FIXED SLOTS PRIVILEGES
+-- MIGRATION: PASS 8D.5E — RESTRICT ADMIN FIXED SLOTS TO CRUD
 -- =================================================================================
 -- Description:
--- Table-level grant for authenticated role on public.zanita_availability_fixed_slots.
--- Row Level Security (RLS) ensures only verified admins (private.is_admin()) can SELECT,
--- INSERT, UPDATE, or DELETE rows.
--- Public and anon roles have ALL privileges explicitly revoked.
+-- Explicit least-privilege configuration for public.zanita_availability_fixed_slots.
+-- Revokes all default and inherited table-level privileges from PUBLIC, anon, and authenticated.
+-- Grants strictly SELECT, INSERT, UPDATE, DELETE to authenticated (no TRUNCATE, TRIGGER, or REFERENCES).
+-- Row Level Security (RLS) ensures only verified admins (private.is_admin()) can execute CRUD operations.
+-- Customers and anonymous users have zero access.
 -- =================================================================================
 
--- 1. Ensure public and anon have zero privileges on zanita_availability_fixed_slots
+-- 1. Ensure PUBLIC, anon, and authenticated have zero residual privileges on the table
 REVOKE ALL ON TABLE public.zanita_availability_fixed_slots FROM PUBLIC;
 REVOKE ALL ON TABLE public.zanita_availability_fixed_slots FROM anon;
+REVOKE ALL ON TABLE public.zanita_availability_fixed_slots FROM authenticated;
 
--- 2. Grant table-level CRUD to authenticated role (access is strictly guarded by RLS)
+-- 2. Grant strictly CRUD privileges to authenticated role (access is guarded by RLS)
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.zanita_availability_fixed_slots TO authenticated;
 
 -- 3. Verify / Ensure RLS is enabled
