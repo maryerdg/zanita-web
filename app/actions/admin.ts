@@ -263,7 +263,7 @@ export async function getWeeklyRules(deliveryMode?: string, deliveryPointId?: st
   const ruleIds = rules.map((r) => r.id).filter(Boolean)
 
   if (ruleIds.length > 0) {
-    const { data: slotsData } = await auth.supabase
+    const { data: slotsData, error: slotsError } = await auth.supabase
       .from('zanita_availability_fixed_slots')
       .select('*')
       .in('availability_rule_id', ruleIds)
@@ -271,8 +271,12 @@ export async function getWeeklyRules(deliveryMode?: string, deliveryPointId?: st
       .order('display_order', { ascending: true })
       .order('slot_time', { ascending: true })
 
+    if (slotsError) {
+      console.error('Error fetching availability fixed slots:', slotsError)
+    }
+
+    const slotsByRule: Record<string, AvailabilityFixedSlotRow[]> = {}
     if (slotsData) {
-      const slotsByRule: Record<string, AvailabilityFixedSlotRow[]> = {}
       slotsData.forEach((slot) => {
         if (!slot.availability_rule_id) return
         if (!slotsByRule[slot.availability_rule_id]) {
@@ -286,11 +290,15 @@ export async function getWeeklyRules(deliveryMode?: string, deliveryPointId?: st
           display_order: slot.display_order,
         })
       })
-
-      rules.forEach((r) => {
-        r.fixed_slots = slotsByRule[r.id] || []
-      })
     }
+
+    rules.forEach((r) => {
+      r.fixed_slots = slotsByRule[r.id] || []
+    })
+  } else {
+    rules.forEach((r) => {
+      r.fixed_slots = []
+    })
   }
 
   return { rules }
