@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 /**
  * Shared security helper: verifies the caller has an active session and is an admin.
  */
-async function verifyAdminCaller() {
+export async function verifyAdminCaller() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
