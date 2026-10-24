@@ -147,7 +147,7 @@ export function AjustesClient({
 
             <div>
               <label htmlFor="clabeInput" className="block text-[11px] font-bold text-[#6E564F] mb-1">
-                CLABE interbancaria o Número de cuenta {enabled && <span className="text-[#A73832]">*</span>}
+                CLABE interbancaria {enabled && <span className="text-[#A73832]">*</span>}
               </label>
               <input
                 id="clabeInput"
@@ -157,9 +157,12 @@ export function AjustesClient({
                 disabled={!enabled}
                 value={clabe}
                 onChange={(e) => setClabe(e.target.value)}
-                placeholder="18 dígitos de CLABE interbancaria"
+                placeholder="18 dígitos"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8DCC4] text-xs font-mono bg-white text-[#261C19] focus:outline-none focus:border-[#A73832]"
               />
+              <p className="text-[10px] text-[#6E564F] mt-1">
+                Puedes escribirla con o sin espacios. Guardaremos únicamente los 18 dígitos.
+              </p>
             </div>
 
             <div>

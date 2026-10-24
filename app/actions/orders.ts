@@ -80,11 +80,11 @@ export async function getCheckoutSlots(
 
 /**
  * Retrieves configurable bank transfer instructions for approved orders.
- * Accessible only to authenticated users with approved orders.
- * Returns isConfigured = false when disabled or required fields are missing.
+ * Accessible only to authenticated order owners with orders in deposit_pending via get_order_payment_instructions RPC.
+ * Returns isConfigured = false when disabled, incomplete, or if caller is not the verified order owner.
  * No dummy production data is returned.
  */
-export async function getStoreBankTransferSettings(): Promise<BankTransferSettings> {
+export async function getStoreBankTransferSettings(orderId?: string): Promise<BankTransferSettings> {
   const unconfigured: BankTransferSettings = {
     enabled: false,
     bankName: '',
@@ -94,26 +94,32 @@ export async function getStoreBankTransferSettings(): Promise<BankTransferSettin
     isConfigured: false,
   };
 
+  if (!orderId) {
+    return unconfigured;
+  }
+
   try {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from('zanita_store_settings')
-      .select('value')
-      .eq('key', 'payment_bank_transfer')
-      .maybeSingle();
+    const { data, error } = await supabase.rpc('get_order_payment_instructions', {
+      p_order_id: orderId,
+    });
 
-    if (data && data.value && typeof data.value === 'object') {
-      const val = data.value as Record<string, unknown>;
-      const enabled = Boolean(val.enabled);
+    if (error) {
+      console.error('get_order_payment_instructions error (code):', error.code);
+      return unconfigured;
+    }
+
+    if (data && typeof data === 'object') {
+      const val = data as Record<string, unknown>;
       const bankName = typeof val.bank_name === 'string' ? val.bank_name.trim() : '';
       const accountHolder = typeof val.account_holder === 'string' ? val.account_holder.trim() : '';
       const clabe = typeof val.clabe === 'string' ? val.clabe.trim() : '';
       const instructions = typeof val.instructions === 'string' ? val.instructions.trim() : '';
 
-      const isConfigured = enabled && Boolean(bankName && accountHolder && clabe);
+      const isConfigured = Boolean(bankName && accountHolder && clabe && /^\d{18}$/.test(clabe));
 
       return {
-        enabled,
+        enabled: isConfigured,
         bankName,
         accountHolder,
         clabe,
@@ -121,8 +127,8 @@ export async function getStoreBankTransferSettings(): Promise<BankTransferSettin
         isConfigured,
       };
     }
-  } catch (err) {
-    console.error('getStoreBankTransferSettings error:', err);
+  } catch {
+    console.error('getStoreBankTransferSettings exception');
   }
 
   return unconfigured;

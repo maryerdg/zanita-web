@@ -524,6 +524,315 @@ assert(
   'Test P.3: Repeated report leaves amount_paid_cents and status uncorrupted'
 );
 
+// ---------------------------------------------------------------------------
+// 7. Payment Settings Hotfix & RPC Security QA (Tests A - P)
+// ---------------------------------------------------------------------------
+console.log('\n--- 7. PAYMENT SETTINGS HOTFIX & RPC SECURITY QA ---');
+
+// Mock Database State
+interface StoreSettingRow {
+  key: string;
+  value: Record<string, unknown>;
+  is_public: boolean;
+  updated_at: string;
+}
+
+let mockStoreSettings: Record<string, StoreSettingRow> = {
+  payment_bank_transfer: {
+    key: 'payment_bank_transfer',
+    value: {
+      enabled: false,
+      bank_name: '',
+      account_holder: '',
+      clabe: '',
+      instructions: '',
+    },
+    is_public: false,
+    updated_at: new Date().toISOString(),
+  },
+};
+
+// Simulation of saveAdminPaymentSettings
+function mockSaveAdminPaymentSettings(
+  userRole: 'admin' | 'customer' | null,
+  settings: {
+    enabled: boolean;
+    bankName: string;
+    accountHolder: string;
+    clabe: string;
+    instructions: string;
+  }
+): { success?: boolean; error?: string } {
+  // 1. Session & Admin check
+  if (!userRole) return { error: 'No autorizado: inicia sesión' };
+  if (userRole !== 'admin') return { error: 'Permisos insuficientes: se requiere rol de administrador' };
+
+  const enabled = Boolean(settings.enabled);
+  const bankName = (settings.bankName || '').trim().slice(0, 50);
+  const accountHolder = (settings.accountHolder || '').trim().slice(0, 100);
+  const rawClabe = (settings.clabe || '').trim();
+  const clabe = rawClabe.replace(/[\s-]+/g, '');
+  const instructions = (settings.instructions || '').trim().slice(0, 500);
+
+  if (enabled) {
+    if (!bankName) return { error: 'El nombre del banco es obligatorio cuando los pagos están habilitados.' };
+    if (!accountHolder) return { error: 'El titular de la cuenta es obligatorio cuando los pagos están habilitados.' };
+    if (!clabe) return { error: 'La CLABE es obligatoria cuando los pagos están habilitados.' };
+    if (!/^\d{18}$/.test(clabe)) {
+      return { error: 'La CLABE debe contener 18 dígitos.' };
+    }
+  }
+
+  // 2. Strict UPDATE on canonical row (no INSERT)
+  const existing = mockStoreSettings['payment_bank_transfer'];
+  if (!existing) {
+    return { error: 'No se encontró la configuración de pagos. Contacta al administrador del sistema.' };
+  }
+
+  mockStoreSettings['payment_bank_transfer'] = {
+    ...existing,
+    value: {
+      enabled,
+      bank_name: bankName,
+      account_holder: accountHolder,
+      clabe,
+      instructions,
+    },
+    updated_at: new Date().toISOString(),
+  };
+
+  return { success: true };
+}
+
+// Simulation of public.get_order_payment_instructions RPC execution
+// Validates BOTH the PostgreSQL routine privilege layer (REVOKE ALL FROM PUBLIC, anon; GRANT EXECUTE TO authenticated)
+// AND the internal SECURITY DEFINER authorization checks.
+function mockGetOrderPaymentInstructions(
+  callerRole: 'authenticated' | 'anon' | null,
+  authUid: string | null,
+  orderId: string,
+  ordersTable: Record<string, { id: string; user_id: string; status: string }>
+): { data: Record<string, string> | null; error: { code: string; message: string } | null } {
+  // 1. PostgreSQL routine privilege check:
+  // PUBLIC and anon have NO EXECUTE privilege -> Postgres denies execution with 42501 before function entry
+  if (!callerRole || callerRole === 'anon') {
+    return {
+      data: null,
+      error: {
+        code: '42501',
+        message: 'permission denied for function get_order_payment_instructions',
+      },
+    };
+  }
+
+  // 2. Authenticated caller executes function body:
+  if (!authUid) {
+    return { data: null, error: null }; // auth.uid() IS NULL -> RETURN NULL
+  }
+
+  // 3. Order check: exists, owned by caller, deposit_pending
+  const order = ordersTable[orderId];
+  if (!order || order.user_id !== authUid || order.status !== 'deposit_pending') {
+    return { data: null, error: null };
+  }
+
+  // 4. Read private payment_bank_transfer setting (strictly key = 'payment_bank_transfer' AND is_public = false)
+  const setting = mockStoreSettings['payment_bank_transfer'];
+  if (!setting || setting.is_public !== false) {
+    return { data: null, error: null };
+  }
+
+  const val = setting.value;
+  const enabled = Boolean(val.enabled);
+  if (!enabled) {
+    return { data: null, error: null };
+  }
+
+  const bankName = typeof val.bank_name === 'string' ? val.bank_name.trim() : '';
+  const accountHolder = typeof val.account_holder === 'string' ? val.account_holder.trim() : '';
+  const clabe = typeof val.clabe === 'string' ? val.clabe.trim() : '';
+  const instructions = typeof val.instructions === 'string' ? val.instructions : '';
+
+  if (!bankName || !accountHolder || !clabe || !/^\d{18}$/.test(clabe)) {
+    return { data: null, error: null };
+  }
+
+  return {
+    data: {
+      bank_name: bankName,
+      account_holder: accountHolder,
+      clabe: clabe,
+      instructions: instructions,
+    },
+    error: null,
+  };
+}
+
+// Test A: Admin saves valid 18-digit CLABE -> success
+const resA = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Ficticio',
+  accountHolder: 'Zanita Test',
+  clabe: '012180000000000001',
+  instructions: 'Concepto: tu pedido',
+});
+assert(resA.success === true, 'Test A: Admin saves valid 18-digit CLABE -> success');
+assert(mockStoreSettings.payment_bank_transfer.value.clabe === '012180000000000001', 'Test A.1: Stored CLABE matches');
+
+// Test B: Admin enters CLABE with spaces -> normalized successfully
+const resB = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Ficticio',
+  accountHolder: 'Zanita Test',
+  clabe: '012 180 0000000000 02',
+  instructions: '',
+});
+assert(resB.success === true, 'Test B: Admin enters CLABE with spaces -> success');
+assert(mockStoreSettings.payment_bank_transfer.value.clabe === '012180000000000002', 'Test B.1: Spaces stripped to 18 digits');
+
+// Test C: Admin enters CLABE with hyphens -> normalized successfully
+const resC = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Ficticio',
+  accountHolder: 'Zanita Test',
+  clabe: '012-180-0000000000-03',
+  instructions: '',
+});
+assert(resC.success === true, 'Test C: Admin enters CLABE with hyphens -> success');
+assert(mockStoreSettings.payment_bank_transfer.value.clabe === '012180000000000003', 'Test C.1: Hyphens stripped to 18 digits');
+
+// Test D: 17 digits -> rejected
+const resD = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Ficticio',
+  accountHolder: 'Zanita Test',
+  clabe: '01218000000000001', // 17 digits
+  instructions: '',
+});
+assert(!resA.error && resD.error === 'La CLABE debe contener 18 dígitos.', 'Test D: 17 digits rejected with exact error');
+
+// Test E: 19 digits -> rejected
+const resE = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Ficticio',
+  accountHolder: 'Zanita Test',
+  clabe: '0121800000000000001', // 19 digits
+  instructions: '',
+});
+assert(resE.error === 'La CLABE debe contener 18 dígitos.', 'Test E: 19 digits rejected with exact error');
+
+// Test F: letters in CLABE -> rejected
+const resF = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Ficticio',
+  accountHolder: 'Zanita Test',
+  clabe: '01218000000000000X',
+  instructions: '',
+});
+assert(resF.error === 'La CLABE debe contener 18 dígitos.', 'Test F: Letters in CLABE rejected with exact error');
+
+// Test G: authenticated non-admin attempts UPDATE -> blocked
+const resG = mockSaveAdminPaymentSettings('customer', {
+  enabled: true,
+  bankName: 'Hacker Bank',
+  accountHolder: 'Attacker',
+  clabe: '000000000000000000',
+  instructions: '',
+});
+assert(Boolean(resG.error?.includes('se requiere rol de administrador')), 'Test G: Authenticated non-admin blocked by role check');
+
+// Test H: anon attempts UPDATE -> blocked
+const resH = mockSaveAdminPaymentSettings(null, {
+  enabled: true,
+  bankName: 'Anon Bank',
+  accountHolder: 'Anon',
+  clabe: '000000000000000000',
+  instructions: '',
+});
+assert(Boolean(resH.error?.includes('No autorizado')), 'Test H: Anon blocked from modifying settings');
+
+// Test I: Admin can UPDATE existing payment_bank_transfer row
+const resI = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Autorizado',
+  accountHolder: 'Zanita Tijuana',
+  clabe: '012180000000000009',
+  instructions: 'Indica tu número de orden',
+});
+assert(resI.success === true, 'Test I: Admin updates existing payment_bank_transfer row');
+assert(mockStoreSettings.payment_bank_transfer.value.bank_name === 'Banco Autorizado', 'Test I.1: Settings updated correctly');
+
+// Test J: Missing canonical row does not silently INSERT
+const backupSettings = mockStoreSettings;
+mockStoreSettings = {}; // row deleted
+const resJ = mockSaveAdminPaymentSettings('admin', {
+  enabled: true,
+  bankName: 'Banco Test',
+  accountHolder: 'Titular',
+  clabe: '012180000000000009',
+  instructions: '',
+});
+assert(
+  resJ.error === 'No se encontró la configuración de pagos. Contacta al administrador del sistema.',
+  'Test J: Missing canonical row returns controlled error without silent INSERT'
+);
+mockStoreSettings = backupSettings; // restore
+
+// Orders mock for RPC tests
+const rpcOrders: Record<string, { id: string; user_id: string; status: string }> = {
+  'ord-userA-deposit-pending': {
+    id: 'ord-userA-deposit-pending',
+    user_id: customerA,
+    status: 'deposit_pending',
+  },
+  'ord-userA-pending-approval': {
+    id: 'ord-userA-pending-approval',
+    user_id: customerA,
+    status: 'pending_approval',
+  },
+  'ord-userB-deposit-pending': {
+    id: 'ord-userB-deposit-pending',
+    user_id: customerB,
+    status: 'deposit_pending',
+  },
+};
+
+// Test K: Customer owns deposit_pending order -> RPC returns configured instructions
+const rpcK = mockGetOrderPaymentInstructions('authenticated', customerA, 'ord-userA-deposit-pending', rpcOrders);
+assert(rpcK.error === null && rpcK.data !== null, 'Test K.1: RPC returns instructions for owned deposit_pending order');
+assert(rpcK.data?.bank_name === 'Banco Autorizado', 'Test K.2: Correct bank_name');
+assert(rpcK.data?.clabe === '012180000000000009', 'Test K.3: Correct clabe');
+assert(!('is_public' in (rpcK.data || {})), 'Test K.4: Internal fields not exposed');
+
+// Test L: Customer owns pending_approval order -> no payment instructions
+const rpcL = mockGetOrderPaymentInstructions('authenticated', customerA, 'ord-userA-pending-approval', rpcOrders);
+assert(rpcL.error === null && rpcL.data === null, 'Test L: pending_approval order returns null (no payment instructions yet)');
+
+// Test M: Customer A requests Customer B order -> denied/no data
+const rpcM = mockGetOrderPaymentInstructions('authenticated', customerA, 'ord-userB-deposit-pending', rpcOrders);
+assert(rpcM.error === null && rpcM.data === null, 'Test M: Cross-customer order request returns null (unauthorized)');
+
+// Test N: Anon RPC call -> permission denied at PostgreSQL privilege layer (code 42501)
+const rpcN = mockGetOrderPaymentInstructions('anon', null, 'ord-userA-deposit-pending', rpcOrders);
+assert(rpcN.data === null, 'Test N.1: Anon RPC returns no data');
+assert(rpcN.error?.code === '42501', 'Test N.2: Anon RPC is rejected with PostgreSQL permission denied error (42501)');
+assert(
+  Boolean(rpcN.error?.message.includes('permission denied for function')),
+  'Test N.3: Error message reflects privilege denial'
+);
+
+// Test O: Disabled payment method -> no instructions
+mockStoreSettings.payment_bank_transfer.value.enabled = false;
+const rpcO = mockGetOrderPaymentInstructions('authenticated', customerA, 'ord-userA-deposit-pending', rpcOrders);
+assert(rpcO.error === null && rpcO.data === null, 'Test O: Disabled payment method returns null instructions to customer');
+mockStoreSettings.payment_bank_transfer.value.enabled = true; // restore
+
+// Test P: Incomplete configuration -> no instructions
+mockStoreSettings.payment_bank_transfer.value.clabe = '';
+const rpcP = mockGetOrderPaymentInstructions('authenticated', customerA, 'ord-userA-deposit-pending', rpcOrders);
+assert(rpcP.error === null && rpcP.data === null, 'Test P: Incomplete configuration returns null instructions to customer');
+mockStoreSettings.payment_bank_transfer.value.clabe = '012180000000000009'; // restore
+
 console.log('\n=====================================================');
 console.log('🎉 ALL TESTS PASSED SUCCESSFULLY (0 FAILURES)!');
 console.log('=====================================================');

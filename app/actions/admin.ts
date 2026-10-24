@@ -1295,19 +1295,24 @@ export async function saveAdminPaymentSettings(settings: {
   const enabled = Boolean(settings.enabled)
   const bankName = (settings.bankName || '').trim().slice(0, 50)
   const accountHolder = (settings.accountHolder || '').trim().slice(0, 100)
-  const clabe = (settings.clabe || '').trim().slice(0, 30)
+  const rawClabe = (settings.clabe || '').trim()
+  const clabe = rawClabe.replace(/[\s-]+/g, '')
   const instructions = (settings.instructions || '').trim().slice(0, 500)
 
   if (enabled) {
     if (!bankName) return { error: 'El nombre del banco es obligatorio cuando los pagos están habilitados.' }
     if (!accountHolder) return { error: 'El titular de la cuenta es obligatorio cuando los pagos están habilitados.' }
-    if (!clabe) return { error: 'La CLABE o cuenta es obligatoria cuando los pagos están habilitados.' }
+    if (!clabe) return { error: 'La CLABE es obligatoria cuando los pagos están habilitados.' }
+    if (!/^\d{18}$/.test(clabe)) {
+      return { error: 'La CLABE debe contener 18 dígitos.' }
+    }
   }
 
-  const { error } = await auth.supabase
+  // Update existing canonical pre-seeded row in zanita_store_settings
+  // Updates strictly value and updated_at without requiring INSERT privileges
+  const { data, error } = await auth.supabase
     .from('zanita_store_settings')
-    .upsert({
-      key: 'payment_bank_transfer',
+    .update({
       value: {
         enabled,
         bank_name: bankName,
@@ -1315,13 +1320,18 @@ export async function saveAdminPaymentSettings(settings: {
         clabe,
         instructions,
       },
-      is_public: false,
       updated_at: new Date().toISOString(),
     })
+    .eq('key', 'payment_bank_transfer')
+    .select('key')
 
   if (error) {
-    console.error('Error saving admin payment settings:', error)
+    console.error('Error saving admin payment settings (code):', error.code)
     return { error: 'Error al guardar configuración de pagos' }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: 'No se encontró la configuración de pagos. Contacta al administrador del sistema.' }
   }
 
   revalidatePath('/admin/ajustes')
