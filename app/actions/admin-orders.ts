@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { verifyAdminCaller } from './admin';
 import { getTijuanaDateString } from '@/lib/time/tijuana';
 import type { CanonicalOrderStatus } from '@/lib/orders/operational-status';
-import { validateOrderTransition } from '@/lib/orders/transitions';
+import { validateOrderTransition, calculateRequiredDepositCents } from '@/lib/orders/transitions';
 
 export interface AdminOrderItemOptionDetail {
   id: string;
@@ -56,6 +56,11 @@ interface RawOrderRow {
   total_amount_cents: number;
   amount_paid_cents: number;
   deposit_required_pct: number | null;
+  payment_reported_at?: string | null;
+  payment_reference?: string | null;
+  payment_reported_amount_cents?: number | null;
+  payment_confirmed_at?: string | null;
+  payment_confirmed_by?: string | null;
   requested_date: string;
   requested_time: string;
   delivery_point_id: string | null;
@@ -83,6 +88,11 @@ export interface AdminOrderListItem {
   total_amount_cents: number;
   amount_paid_cents: number;
   deposit_required_pct: number | null;
+  payment_reported_at?: string | null;
+  payment_reference?: string | null;
+  payment_reported_amount_cents?: number | null;
+  payment_confirmed_at?: string | null;
+  payment_confirmed_by?: string | null;
   requested_date: string;
   requested_time: string;
   delivery_point_id: string | null;
@@ -120,7 +130,6 @@ export async function getAdminTodayOperationSummary(): Promise<{
   try {
     const tijuanaToday = getTijuanaDateString();
 
-    // Query active orders relevant to today or pending attention
     const { data: orders, error } = await auth.supabase
       .from('zanita_orders')
       .select('id, status, requested_date, total_amount_cents')
@@ -140,7 +149,6 @@ export async function getAdminTodayOperationSummary(): Promise<{
     ).length;
     const readyCount = todayOrders.filter((o) => o.status === 'ready').length;
 
-    // Pending approval orders need attention regardless of fulfillment date
     const { count: pendingApprovalCount, error: pendingErr } = await auth.supabase
       .from('zanita_orders')
       .select('id', { count: 'exact', head: true })
@@ -151,7 +159,7 @@ export async function getAdminTodayOperationSummary(): Promise<{
     }
 
     const scheduledTotalCentsToday = todayOrders.reduce(
-      (sum, o) => sum + (o.total_amount_cents || 0),
+      (acc, o) => acc + (o.total_amount_cents || 0),
       0
     );
 
@@ -167,14 +175,16 @@ export async function getAdminTodayOperationSummary(): Promise<{
     };
   } catch (err: unknown) {
     console.error('getAdminTodayOperationSummary exception:', err);
-    return { error: 'Error inesperado al cargar resumen de operaciones' };
+    return { error: 'Error inesperado al calcular operaciones del día' };
   }
 }
 
 /**
- * Retrieves the operational orders list with details, sorted for optimal workflow.
+ * Retrieves order list with items, options, and operational metadata.
  */
-export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
+export async function getAdminOrders(
+  filter: string = 'hoy'
+): Promise<{
   orders?: AdminOrderListItem[];
   error?: string;
 }> {
@@ -198,6 +208,11 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
       total_amount_cents,
       amount_paid_cents,
       deposit_required_pct,
+      payment_reported_at,
+      payment_reference,
+      payment_reported_amount_cents,
+      payment_confirmed_at,
+      payment_confirmed_by,
       requested_date,
       requested_time,
       delivery_point_id,
@@ -225,7 +240,6 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
       )
     `);
 
-    // Apply filtering
     if (filter === 'hoy') {
       query = query
         .eq('requested_date', tijuanaToday)
@@ -243,9 +257,7 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
     } else if (filter === 'completados') {
       query = query.eq('status', 'delivered');
     }
-    // 'todos' applies no status/date filter
 
-    // Order by priority: attention (pending_approval) first, then chronological requested_date / requested_time
     const { data, error } = await query
       .order('requested_date', { ascending: true })
       .order('requested_time', { ascending: true });
@@ -255,15 +267,17 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
       return { error: 'Error al consultar lista de pedidos' };
     }
 
-    const formatted: AdminOrderListItem[] = ((data as unknown as RawOrderRow[]) || []).map((row: RawOrderRow) => {
-      const itemsList: AdminOrderItemDetail[] = (row.items || []).map((it: RawOrderItemRow) => ({
+    const rows = (data || []) as unknown as RawOrderRow[];
+
+    const formatted: AdminOrderListItem[] = rows.map((row) => {
+      const itemsList: AdminOrderItemDetail[] = (row.items || []).map((it) => ({
         id: it.id,
         product_name_snapshot: it.product_name_snapshot,
         quantity: it.quantity,
         base_unit_price_snapshot_cents: it.base_unit_price_snapshot_cents,
         final_unit_price_snapshot_cents: it.final_unit_price_snapshot_cents,
         subtotal_cents: it.subtotal_cents,
-        options: (it.options || []).map((opt: RawOrderItemOptionRow) => ({
+        options: (it.options || []).map((opt) => ({
           id: opt.id,
           option_name_snapshot: opt.option_name_snapshot,
           group_name_snapshot: opt.group_name_snapshot,
@@ -289,8 +303,13 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
         products_subtotal_cents: row.products_subtotal_cents,
         delivery_fee_cents: row.delivery_fee_cents,
         total_amount_cents: row.total_amount_cents,
-        amount_paid_cents: row.amount_paid_cents,
+        amount_paid_cents: row.amount_paid_cents || 0,
         deposit_required_pct: row.deposit_required_pct,
+        payment_reported_at: row.payment_reported_at || null,
+        payment_reference: row.payment_reference || null,
+        payment_reported_amount_cents: row.payment_reported_amount_cents || null,
+        payment_confirmed_at: row.payment_confirmed_at || null,
+        payment_confirmed_by: row.payment_confirmed_by || null,
         requested_date: row.requested_date,
         requested_time: row.requested_time,
         delivery_point_id: row.delivery_point_id,
@@ -307,7 +326,6 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
       };
     });
 
-    // Custom sorting: If viewing 'hoy' or 'todos', hoist 'pending_approval' to the top
     if (filter === 'hoy' || filter === 'todos') {
       formatted.sort((a, b) => {
         if (a.status === 'pending_approval' && b.status !== 'pending_approval') return -1;
@@ -321,13 +339,18 @@ export async function getAdminOrdersList(filter: string = 'hoy'): Promise<{
 
     return { orders: formatted };
   } catch (err: unknown) {
-    console.error('getAdminOrdersList exception:', err);
-    return { error: 'Error inesperado al recuperar los pedidos' };
+    console.error('getAdminOrders exception:', err);
+    return { error: 'Error inesperado al cargar pedidos' };
   }
 }
 
 /**
- * Retrieves deep detail for a single order by order_number.
+ * Backward compatibility alias for getAdminOrders.
+ */
+export const getAdminOrdersList = getAdminOrders;
+
+/**
+ * Retrieves a single order in full detail by order number.
  */
 export async function getAdminOrderDetail(orderNumber: string): Promise<{
   order?: AdminOrderListItem;
@@ -353,6 +376,11 @@ export async function getAdminOrderDetail(orderNumber: string): Promise<{
         total_amount_cents,
         amount_paid_cents,
         deposit_required_pct,
+        payment_reported_at,
+        payment_reference,
+        payment_reported_amount_cents,
+        payment_confirmed_at,
+        payment_confirmed_by,
         requested_date,
         requested_time,
         delivery_point_id,
@@ -421,8 +449,13 @@ export async function getAdminOrderDetail(orderNumber: string): Promise<{
         products_subtotal_cents: data.products_subtotal_cents,
         delivery_fee_cents: data.delivery_fee_cents,
         total_amount_cents: data.total_amount_cents,
-        amount_paid_cents: data.amount_paid_cents,
+        amount_paid_cents: data.amount_paid_cents || 0,
         deposit_required_pct: data.deposit_required_pct,
+        payment_reported_at: data.payment_reported_at || null,
+        payment_reference: data.payment_reference || null,
+        payment_reported_amount_cents: data.payment_reported_amount_cents || null,
+        payment_confirmed_at: data.payment_confirmed_at || null,
+        payment_confirmed_by: data.payment_confirmed_by || null,
         requested_date: data.requested_date,
         requested_time: data.requested_time,
         delivery_point_id: data.delivery_point_id,
@@ -455,7 +488,6 @@ export async function adminUpdateOrderStatus(
   if (auth.error || !auth.supabase) return { success: false, error: auth.error || 'No autorizado' };
 
   try {
-    // 1. Fetch current order state
     const { data: order, error: fetchErr } = await auth.supabase
       .from('zanita_orders')
       .select('id, status, total_amount_cents, amount_paid_cents, deposit_required_pct, order_number')
@@ -468,10 +500,9 @@ export async function adminUpdateOrderStatus(
 
     const currentStatus = order.status as CanonicalOrderStatus;
 
-    // 2. Validate transition through authoritative engine
     const validation = validateOrderTransition(currentStatus, requestedStatus, {
       totalAmountCents: order.total_amount_cents,
-      amountPaidCents: order.amount_paid_cents,
+      amountPaidCents: order.amount_paid_cents || 0,
       depositRequiredPct: order.deposit_required_pct,
     });
 
@@ -479,7 +510,6 @@ export async function adminUpdateOrderStatus(
       return { success: false, error: validation.error };
     }
 
-    // 3. Mutate order status in DB
     const { error: updateErr } = await auth.supabase
       .from('zanita_orders')
       .update({
@@ -493,16 +523,117 @@ export async function adminUpdateOrderStatus(
       return { success: false, error: 'Error en base de datos al actualizar estado' };
     }
 
-    // 4. Revalidate cache
     revalidatePath('/admin');
     revalidatePath('/admin/pedidos');
     if (order.order_number) {
       revalidatePath(`/pedidos/${order.order_number}`);
     }
+    revalidatePath('/mi-cuenta');
 
     return { success: true };
   } catch (err: unknown) {
     console.error('adminUpdateOrderStatus exception:', err);
     return { success: false, error: 'Error inesperado al procesar la acción' };
   }
+}
+
+/**
+ * Authoritative combined action: Confirms received payment AND advances order to confirmed
+ * if the required payment threshold is met.
+ * Server validates:
+ * 1. Admin caller
+ * 2. Order status = deposit_pending
+ * 3. Amount > 0 and <= outstanding balance
+ * 4. Atomic update of amount_paid_cents, audit timestamp, and order status
+ */
+export async function adminConfirmPaymentAndOrder(
+  orderId: string,
+  amountPesos: number
+): Promise<{ success: boolean; error?: string }> {
+  const auth = await verifyAdminCaller();
+  if (auth.error || !auth.supabase || !auth.user) {
+    return { success: false, error: auth.error || 'No autorizado' };
+  }
+
+  try {
+    if (isNaN(amountPesos) || amountPesos <= 0) {
+      return { success: false, error: 'Monto inválido. Debe ingresar un valor mayor a $0 MXN.' };
+    }
+
+    const amountCents = Math.round(amountPesos * 100);
+
+    const { data: order, error: fetchErr } = await auth.supabase
+      .from('zanita_orders')
+      .select('id, status, total_amount_cents, amount_paid_cents, deposit_required_pct, order_number')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchErr || !order) {
+      return { success: false, error: 'Pedido no encontrado' };
+    }
+
+    if (order.status !== 'deposit_pending') {
+      return { success: false, error: 'El pedido no se encuentra en espera de pago.' };
+    }
+
+    const currentPaid = order.amount_paid_cents || 0;
+    const remainingBalance = order.total_amount_cents - currentPaid;
+
+    if (amountCents > remainingBalance) {
+      return {
+        success: false,
+        error: `El monto ingresado ($${(amountCents / 100).toFixed(2)} MXN) excede el saldo pendiente ($${(remainingBalance / 100).toFixed(2)} MXN).`,
+      };
+    }
+
+    const newAmountPaid = currentPaid + amountCents;
+    const requiredDeposit = calculateRequiredDepositCents(
+      order.total_amount_cents,
+      order.deposit_required_pct
+    );
+    const nowIso = new Date().toISOString();
+
+    // In V1, standard orders require 100% to confirm. If met, advance to confirmed.
+    const shouldConfirm = newAmountPaid >= requiredDeposit;
+    const nextStatus = shouldConfirm ? 'confirmed' : 'deposit_pending';
+
+    const { error: updErr } = await auth.supabase
+      .from('zanita_orders')
+      .update({
+        amount_paid_cents: newAmountPaid,
+        status: nextStatus,
+        payment_confirmed_at: nowIso,
+        payment_confirmed_by: auth.user.id,
+        updated_at: nowIso,
+      })
+      .eq('id', orderId);
+
+    if (updErr) {
+      console.error('adminConfirmPaymentAndOrder update error:', updErr);
+      return { success: false, error: 'Error al registrar el pago en base de datos.' };
+    }
+
+    revalidatePath('/admin');
+    revalidatePath('/admin/pedidos');
+    if (order.order_number) {
+      revalidatePath(`/pedidos/${order.order_number}`);
+    }
+    revalidatePath('/mi-cuenta');
+
+    return { success: true };
+  } catch (err: unknown) {
+    console.error('adminConfirmPaymentAndOrder exception:', err);
+    return { success: false, error: 'Error inesperado al confirmar pago y pedido.' };
+  }
+}
+
+/**
+ * Records payment for an order.
+ * In V1 standard flow, calls adminConfirmPaymentAndOrder.
+ */
+export async function adminRecordOrderPayment(
+  orderId: string,
+  amountPesos: number
+): Promise<{ success: boolean; error?: string }> {
+  return adminConfirmPaymentAndOrder(orderId, amountPesos);
 }

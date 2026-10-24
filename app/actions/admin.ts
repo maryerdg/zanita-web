@@ -1238,3 +1238,94 @@ export async function saveCrossZoneTransitionBuffer(minutes: number) {
   revalidatePath('/admin')
   return { success: true, message: 'Tiempo de transición actualizado correctamente' }
 }
+
+export interface AdminPaymentBankSettings {
+  enabled: boolean
+  bankName: string
+  accountHolder: string
+  clabe: string
+  instructions: string
+}
+
+export async function getAdminPaymentSettings(): Promise<{
+  settings?: AdminPaymentBankSettings
+  error?: string
+}> {
+  const auth = await verifyAdminCaller()
+  if (auth.error || !auth.supabase) return { error: auth.error || 'No autorizado' }
+
+  try {
+    const { data, error } = await auth.supabase
+      .from('zanita_store_settings')
+      .select('value')
+      .eq('key', 'payment_bank_transfer')
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error fetching admin payment settings:', error)
+      return { error: 'Error al consultar configuración de pagos' }
+    }
+
+    const val = (data?.value as Record<string, unknown>) || {}
+    return {
+      settings: {
+        enabled: Boolean(val.enabled),
+        bankName: typeof val.bank_name === 'string' ? val.bank_name : '',
+        accountHolder: typeof val.account_holder === 'string' ? val.account_holder : '',
+        clabe: typeof val.clabe === 'string' ? val.clabe : '',
+        instructions: typeof val.instructions === 'string' ? val.instructions : '',
+      },
+    }
+  } catch (err: unknown) {
+    console.error('getAdminPaymentSettings exception:', err)
+    return { error: 'Error inesperado al consultar configuración de pagos' }
+  }
+}
+
+export async function saveAdminPaymentSettings(settings: {
+  enabled: boolean
+  bankName: string
+  accountHolder: string
+  clabe: string
+  instructions: string
+}): Promise<{ success?: boolean; error?: string }> {
+  const auth = await verifyAdminCaller()
+  if (auth.error || !auth.supabase) return { error: auth.error || 'No autorizado' }
+
+  const enabled = Boolean(settings.enabled)
+  const bankName = (settings.bankName || '').trim().slice(0, 50)
+  const accountHolder = (settings.accountHolder || '').trim().slice(0, 100)
+  const clabe = (settings.clabe || '').trim().slice(0, 30)
+  const instructions = (settings.instructions || '').trim().slice(0, 500)
+
+  if (enabled) {
+    if (!bankName) return { error: 'El nombre del banco es obligatorio cuando los pagos están habilitados.' }
+    if (!accountHolder) return { error: 'El titular de la cuenta es obligatorio cuando los pagos están habilitados.' }
+    if (!clabe) return { error: 'La CLABE o cuenta es obligatoria cuando los pagos están habilitados.' }
+  }
+
+  const { error } = await auth.supabase
+    .from('zanita_store_settings')
+    .upsert({
+      key: 'payment_bank_transfer',
+      value: {
+        enabled,
+        bank_name: bankName,
+        account_holder: accountHolder,
+        clabe,
+        instructions,
+      },
+      is_public: false,
+      updated_at: new Date().toISOString(),
+    })
+
+  if (error) {
+    console.error('Error saving admin payment settings:', error)
+    return { error: 'Error al guardar configuración de pagos' }
+  }
+
+  revalidatePath('/admin/ajustes')
+  revalidatePath('/admin/pedidos')
+  revalidatePath('/admin')
+  return { success: true }
+}

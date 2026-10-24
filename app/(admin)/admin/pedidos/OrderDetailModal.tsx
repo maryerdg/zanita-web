@@ -7,19 +7,25 @@ import {
   Mail,
   MapPin,
   Calendar,
-  Clock,
   Package,
   AlertCircle,
   CheckCircle2,
   ChefHat,
   Sparkles,
+  CreditCard,
+  DollarSign,
 } from 'lucide-react';
 import type { AdminOrderListItem } from '@/app/actions/admin-orders';
-import { adminUpdateOrderStatus } from '@/app/actions/admin-orders';
+import {
+  adminUpdateOrderStatus,
+  adminRecordOrderPayment,
+  adminConfirmPaymentAndOrder,
+} from '@/app/actions/admin-orders';
 import type { CanonicalOrderStatus } from '@/lib/orders/operational-status';
 import { getOperationalStatusMeta } from '@/lib/orders/operational-status';
 import { derivePaymentStatus } from '@/lib/orders/payment-status';
 import { formatDateLong, formatTimeShort } from '@/lib/time/tijuana';
+import { calculateRequiredDepositCents } from '@/lib/orders/transitions';
 
 interface OrderDetailModalProps {
   order: AdminOrderListItem | null;
@@ -37,17 +43,26 @@ export function OrderDetailModal({
   const [isUpdating, setIsUpdating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Payment confirmation form state
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
+
   if (!isOpen || !order) return null;
 
   const statusMeta = getOperationalStatusMeta(order.status);
   const paymentMeta = derivePaymentStatus(
     order.total_amount_cents,
     order.amount_paid_cents,
-    order.deposit_required_pct
+    order.deposit_required_pct,
+    order.payment_reported_at
   );
 
-  const isCetys = order.delivery_mode_snapshot === 'cetys_pickup';
-  const isHomeDelivery = order.delivery_mode_snapshot === 'home_delivery';
+  const requiredDepositCents = calculateRequiredDepositCents(
+    order.total_amount_cents,
+    order.deposit_required_pct
+  );
+  const isPaymentThresholdMet = order.amount_paid_cents >= requiredDepositCents;
 
   const handleAction = async (nextStatus: CanonicalOrderStatus) => {
     setIsUpdating(true);
@@ -67,12 +82,36 @@ export function OrderDetailModal({
     }
   };
 
+  const handleSavePayment = async (amountInPesos: number) => {
+    setIsSavingPayment(true);
+    setActionError(null);
+    try {
+      const res =
+        order.status === 'deposit_pending'
+          ? await adminConfirmPaymentAndOrder(order.id, amountInPesos)
+          : await adminRecordOrderPayment(order.id, amountInPesos);
+      if (!res.success) {
+        setActionError(res.error || 'No se pudo registrar el pago');
+      } else {
+        setShowPaymentForm(false);
+        onStatusUpdated?.();
+        if (order.status === 'deposit_pending') {
+          onClose();
+        }
+      }
+    } catch {
+      setActionError('Error de red al registrar el pago');
+    } finally {
+      setIsSavingPayment(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-[#E8DCC4] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-5 py-4 border-b border-[#F2ECE1] flex items-center justify-between bg-[#FAF7F2]">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="font-mono text-base font-bold text-[#261C19]">
               {order.order_number}
             </span>
@@ -108,6 +147,108 @@ export function OrderDetailModal({
             </div>
           )}
 
+          {/* Attention Banner if customer reported payment */}
+          {order.payment_reported_at && order.amount_paid_cents < order.total_amount_cents && (
+            <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between border-b border-blue-200/60 pb-2">
+                <span className="font-bold text-xs uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-blue-600" />
+                  Pago Reportado por el Cliente
+                </span>
+                <span className="text-[11px] text-blue-700 font-mono">
+                  {new Date(order.payment_reported_at).toLocaleString('es-MX', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-blue-900">
+                <p>
+                  <strong>Referencia / Dígitos:</strong>{' '}
+                  <span className="font-mono">{order.payment_reference || 'Sin referencia'}</span>
+                </p>
+                <p>
+                  <strong>Monto esperado:</strong>{' '}
+                  <span className="font-bold">${(order.total_amount_cents / 100).toFixed(2)} MXN</span>
+                </p>
+              </div>
+
+              {!showPaymentForm && (
+                <div className="pt-1">
+                  <button
+                    onClick={() => {
+                      setPaymentAmountInput(((order.total_amount_cents - order.amount_paid_cents) / 100).toFixed(2));
+                      setShowPaymentForm(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-2xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Verificar y Confirmar Pago Recibido</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Payment Input Form Modal/Card */}
+          {showPaymentForm && (
+            <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8DCC4] space-y-3">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-[#261C19] flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-emerald-600" />
+                Registrar Pago Autorizado
+              </h4>
+              <p className="text-[11px] text-[#6E564F]">
+                Ingresa el monto recibido que confirmaste en tu cuenta bancaria.
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-bold">$</span>
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="0"
+                    max={(order.total_amount_cents / 100).toFixed(2)}
+                    value={paymentAmountInput}
+                    onChange={(e) => setPaymentAmountInput(e.target.value)}
+                    className="w-full pl-7 pr-12 py-2 rounded-lg border border-[#E4D5C1] text-sm font-mono font-bold bg-white text-[#261C19]"
+                    placeholder="0.00"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">MXN</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmountInput((order.total_amount_cents / 100).toFixed(2))}
+                    className="px-2.5 py-2 text-xs bg-white border border-[#E4D5C1] rounded-lg text-stone-700 hover:bg-stone-50"
+                  >
+                    Total (${(order.total_amount_cents / 100).toFixed(0)})
+                  </button>
+
+                  <button
+                    disabled={isSavingPayment}
+                    onClick={() => handleSavePayment(parseFloat(paymentAmountInput) || 0)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                  >
+                    {isSavingPayment
+                      ? 'Procesando...'
+                      : order.status === 'deposit_pending'
+                      ? 'Confirmar pago y pedido'
+                      : 'Confirmar'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentForm(false)}
+                    className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-medium"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Attention Banner if pending approval */}
           {order.status === 'pending_approval' && (
             <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
@@ -117,19 +258,6 @@ export function OrderDetailModal({
               </p>
               <p className="text-[11px] text-amber-800">
                 Revisa los productos, la fecha y hora solicitada. Al aprobar, el pedido quedará pendiente de pago.
-              </p>
-            </div>
-          )}
-
-          {/* Quote Required Alert if applicable */}
-          {order.delivery_requires_quote_snapshot && order.delivery_quote_status === 'pending' && (
-            <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 space-y-1">
-              <p className="font-bold flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-blue-600" />
-                Entrega a domicilio requiere cotización
-              </p>
-              <p className="text-[11px] text-blue-800">
-                Dirección: {order.delivery_address_snapshot || 'Ubicación solicitada por cliente'}.
               </p>
             </div>
           )}
@@ -149,54 +277,37 @@ export function OrderDetailModal({
                     <Phone className="w-3.5 h-3.5 text-[#A73832]" />
                     {order.customer_phone_snapshot}
                   </span>
-                  {order.customer_email_snapshot && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-stone-400" />
-                      {order.customer_email_snapshot}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3.5 h-3.5 text-[#A73832]" />
+                    {order.customer_email_snapshot}
+                  </span>
                 </div>
               </div>
-
-              {order.customer_phone_snapshot && (
-                <a
-                  href={`tel:${order.customer_phone_snapshot}`}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#E8DCC4] text-[#A73832] font-semibold text-xs hover:bg-[#F2ECE1] transition-colors self-start sm:self-auto"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  Llamar
-                </a>
-              )}
             </div>
           </div>
 
-          {/* Fulfillment Details */}
+          {/* Delivery & Schedule Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3.5 rounded-xl border border-[#F2ECE1] bg-white space-y-1">
-              <span className="text-[10px] uppercase font-bold text-stone-500">
-                Fecha & Hora de Entrega
-              </span>
-              <p className="font-semibold text-[#261C19] flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#F2ECE1] space-y-1">
+              <span className="font-semibold text-stone-700 text-[11px] uppercase tracking-wider flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-[#A73832]" />
+                Fecha y Hora Programada
+              </span>
+              <p className="font-bold text-stone-900 capitalize text-xs">
                 {formatDateLong(order.requested_date)}
               </p>
-              <p className="text-[#6E564F] flex items-center gap-1.5 font-medium">
-                <Clock className="w-3.5 h-3.5 text-stone-400" />
-                {formatTimeShort(order.requested_time)} hrs
+              <p className="text-stone-600 font-medium">
+                {formatTimeShort(order.requested_time)} hrs (Tijuana)
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl border border-[#F2ECE1] bg-white space-y-1">
-              <span className="text-[10px] uppercase font-bold text-stone-500">
-                Modalidad & Destino
-              </span>
-              <p className="font-semibold text-[#261C19] flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#F2ECE1] space-y-1">
+              <span className="font-semibold text-stone-700 text-[11px] uppercase tracking-wider flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-[#A73832]" />
-                {isCetys
-                  ? 'Pickup CETYS Universidad'
-                  : isHomeDelivery
-                  ? 'Entrega a Domicilio'
-                  : order.delivery_name_snapshot || 'Punto Oficial'}
+                Punto o Modalidad
+              </span>
+              <p className="font-bold text-stone-900 text-xs">
+                {order.delivery_name_snapshot || 'Punto de entrega'}
               </p>
               {order.delivery_address_snapshot && (
                 <p className="text-[11px] text-[#6E564F]">
@@ -256,9 +367,25 @@ export function OrderDetailModal({
 
           {/* Financial Breakdown */}
           <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#F2ECE1] space-y-1.5">
-            <h3 className="font-semibold text-stone-700 text-[11px] uppercase tracking-wider mb-2">
-              Resumen Financiero
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-stone-700 text-[11px] uppercase tracking-wider">
+                Resumen Financiero
+              </h3>
+              {!showPaymentForm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentAmountInput(((order.total_amount_cents - order.amount_paid_cents) / 100).toFixed(2));
+                    setShowPaymentForm(true);
+                  }}
+                  className="text-xs text-blue-700 font-bold hover:underline inline-flex items-center gap-1"
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Registrar pago</span>
+                </button>
+              )}
+            </div>
+
             <div className="flex justify-between text-stone-600">
               <span>Subtotal productos:</span>
               <span className="font-mono">${(order.products_subtotal_cents / 100).toFixed(2)} MXN</span>
@@ -286,6 +413,17 @@ export function OrderDetailModal({
                 <span>Saldo pendiente:</span>
                 <span className="font-mono font-semibold text-amber-700">
                   ${((order.total_amount_cents - order.amount_paid_cents) / 100).toFixed(2)} MXN
+                </span>
+              </div>
+            )}
+            {order.payment_confirmed_at && (
+              <div className="flex justify-between text-[11px] text-stone-500 pt-0.5 border-t border-[#F2ECE1]">
+                <span>Pago verificado:</span>
+                <span className="font-mono">
+                  {new Date(order.payment_confirmed_at).toLocaleString('es-MX', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
                 </span>
               </div>
             )}
@@ -320,10 +458,35 @@ export function OrderDetailModal({
             )}
 
             {order.status === 'deposit_pending' && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-200">
-                  Esperando pago del cliente
-                </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {isPaymentThresholdMet ? (
+                  <button
+                    disabled={isUpdating}
+                    onClick={() => handleAction('confirmed')}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Confirmar Pedido (Pago Cubierto)</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => {
+                        setPaymentAmountInput(((order.total_amount_cents - order.amount_paid_cents) / 100).toFixed(2));
+                        setShowPaymentForm(true);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Confirmar pago y pedido</span>
+                    </button>
+                    <span className="text-xs text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-200">
+                      {order.payment_reported_at ? 'Pago por verificar' : 'Esperando pago del cliente'}
+                    </span>
+                  </>
+                )}
+
                 <button
                   disabled={isUpdating}
                   onClick={() => handleAction('cancelled')}

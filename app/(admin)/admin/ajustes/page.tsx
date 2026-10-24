@@ -1,5 +1,29 @@
-import { redirect } from 'next/navigation'
+import { redirect } from 'next/navigation';
+import { verifyAdminCaller, getAdminPaymentSettings } from '@/app/actions/admin';
+import { AjustesClient } from './AjustesClient';
 
-export default function AdminAjustesPage() {
-  redirect('/admin')
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function AdminAjustesPage() {
+  const auth = await verifyAdminCaller();
+  if (auth.error || !auth.supabase) {
+    redirect('/iniciar-sesion');
+  }
+
+  const { settings } = await getAdminPaymentSettings();
+
+  const fallbackSettings = {
+    enabled: false,
+    bankName: '',
+    accountHolder: '',
+    clabe: '',
+    instructions: '',
+  };
+
+  return (
+    <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <AjustesClient initialSettings={settings || fallbackSettings} />
+    </div>
+  );
 }

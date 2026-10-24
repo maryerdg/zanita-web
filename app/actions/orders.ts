@@ -1,10 +1,20 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from './supabase-server';
 import type { SubmitOrderPayload } from '@/lib/checkout/types';
 import { submitOrderWithClient, type SubmitOrderResult } from '@/lib/orders/service';
 
 export type { SubmitOrderResult };
+
+export interface BankTransferSettings {
+  enabled: boolean;
+  bankName: string;
+  accountHolder: string;
+  clabe: string;
+  instructions: string;
+  isConfigured: boolean;
+}
 
 /**
  * Server Action to submit an order via public.submit_order RPC.
@@ -37,7 +47,6 @@ export async function submitCheckoutOrder(payload: SubmitOrderPayload): Promise<
   }
 }
 
-
 /**
  * Server Action to fetch authoritative availability slots for checkout.
  */
@@ -48,23 +57,154 @@ export async function getCheckoutSlots(
   daysAhead: number = 14
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     const { data, error } = await supabase.rpc('get_checkout_availability', {
       p_delivery_mode: deliveryMode,
       p_delivery_point_id: deliveryPointId || null,
       p_start_date: startDate || null,
       p_days: daysAhead,
-    })
+    });
 
     if (error) {
-      console.error('Error fetching checkout availability:', error)
-      return { error: 'Error al consultar disponibilidad del servicio' }
+      console.error('Error fetching checkout availability:', error);
+      return { error: 'Error al consultar disponibilidad del servicio' };
     }
 
-    return { availability: data }
+    return { availability: data };
   } catch (err: unknown) {
-    console.error('getCheckoutSlots exception:', err)
-    return { error: 'Error al consultar disponibilidad' }
+    console.error('getCheckoutSlots exception:', err);
+    return { error: 'Error al consultar disponibilidad' };
+  }
+}
+
+/**
+ * Retrieves configurable bank transfer instructions for approved orders.
+ * Accessible only to authenticated users with approved orders.
+ * Returns isConfigured = false when disabled or required fields are missing.
+ * No dummy production data is returned.
+ */
+export async function getStoreBankTransferSettings(): Promise<BankTransferSettings> {
+  const unconfigured: BankTransferSettings = {
+    enabled: false,
+    bankName: '',
+    accountHolder: '',
+    clabe: '',
+    instructions: '',
+    isConfigured: false,
+  };
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('zanita_store_settings')
+      .select('value')
+      .eq('key', 'payment_bank_transfer')
+      .maybeSingle();
+
+    if (data && data.value && typeof data.value === 'object') {
+      const val = data.value as Record<string, unknown>;
+      const enabled = Boolean(val.enabled);
+      const bankName = typeof val.bank_name === 'string' ? val.bank_name.trim() : '';
+      const accountHolder = typeof val.account_holder === 'string' ? val.account_holder.trim() : '';
+      const clabe = typeof val.clabe === 'string' ? val.clabe.trim() : '';
+      const instructions = typeof val.instructions === 'string' ? val.instructions.trim() : '';
+
+      const isConfigured = enabled && Boolean(bankName && accountHolder && clabe);
+
+      return {
+        enabled,
+        bankName,
+        accountHolder,
+        clabe,
+        instructions,
+        isConfigured,
+      };
+    }
+  } catch (err) {
+    console.error('getStoreBankTransferSettings error:', err);
+  }
+
+  return unconfigured;
+}
+
+/**
+ * Server Action for an authenticated customer to report having made their payment.
+ * Updates payment_reported_at and optional reference.
+ * Does NOT set amount_paid_cents.
+ * Does NOT advance order status.
+ * Idempotent: repeated clicks preserve original report timestamp and update reference.
+ */
+export async function reportCustomerOrderPayment(
+  orderId: string,
+  reference?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: 'Debes iniciar sesión para reportar tu pago.' };
+    }
+
+    const sanitizedRef = reference ? reference.trim().slice(0, 50) : null;
+
+    // 1. Try public.report_order_payment RPC
+    const { data: rpcData, error: rpcError } = await supabase.rpc('report_order_payment', {
+      p_order_id: orderId,
+      p_reference: sanitizedRef,
+    });
+
+    if (!rpcError && rpcData?.success) {
+      revalidatePath('/mi-cuenta');
+      revalidatePath('/admin');
+      revalidatePath('/admin/pedidos');
+      return { success: true };
+    }
+
+    // 2. Fallback in case RPC is not yet in DB: verified server-side update
+    const { data: order, error: fetchErr } = await supabase
+      .from('zanita_orders')
+      .select('id, user_id, status, order_number, payment_reported_at')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchErr || !order || order.user_id !== user.id) {
+      return { success: false, error: 'Pedido no encontrado o no autorizado.' };
+    }
+
+    if (order.status !== 'deposit_pending') {
+      return { success: false, error: 'El pedido no se encuentra en espera de pago.' };
+    }
+
+    const nowIso = new Date().toISOString();
+    const { error: updErr } = await supabase
+      .from('zanita_orders')
+      .update({
+        payment_reported_at: order.payment_reported_at || nowIso,
+        payment_reference: sanitizedRef,
+        updated_at: nowIso,
+      })
+      .eq('id', orderId)
+      .eq('user_id', user.id);
+
+    if (updErr) {
+      console.error('reportCustomerOrderPayment update error:', updErr);
+      return { success: false, error: 'No se pudo guardar el reporte de pago.' };
+    }
+
+    revalidatePath(`/pedidos/${order.order_number}`);
+    revalidatePath('/mi-cuenta');
+    revalidatePath('/admin');
+    revalidatePath('/admin/pedidos');
+
+    return { success: true };
+  } catch (err: unknown) {
+    console.error('reportCustomerOrderPayment exception:', err);
+    return { success: false, error: 'Error inesperado al reportar el pago.' };
   }
 }

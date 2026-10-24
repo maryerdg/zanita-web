@@ -1,18 +1,20 @@
 /**
  * Derived Payment Status for Zanita Orders
  *
- * In 8E.1, payment status is strictly DERIVED from canonical financial fields:
+ * Payment status is strictly DERIVED from canonical financial and reporting fields:
  * - total_amount_cents
  * - amount_paid_cents
  * - deposit_required_pct
+ * - payment_reported_at
  *
- * It is strictly READ-ONLY in 8E.1. No automatic or bypass mutations.
+ * Canonical truth is amount_paid_cents. Customer reporting indicates intent to verify.
  */
 
 import { calculateRequiredDepositCents } from './transitions';
 
 export type DerivedPaymentStatus =
   | 'unpaid'
+  | 'payment_reported'
   | 'partially_paid'
   | 'deposit_covered'
   | 'paid'
@@ -29,12 +31,14 @@ export interface PaymentStatusMeta {
   requiredDepositPesos: number;
   isFullyPaid: boolean;
   isDepositCovered: boolean;
+  isReportedByCustomer: boolean;
 }
 
 export function derivePaymentStatus(
   totalAmountCents: number = 0,
   amountPaidCents: number = 0,
-  depositRequiredPct?: number | null
+  depositRequiredPct?: number | null,
+  paymentReportedAt?: string | Date | null
 ): PaymentStatusMeta {
   const total = Math.max(0, totalAmountCents);
   const paid = Math.max(0, amountPaidCents);
@@ -45,6 +49,7 @@ export function derivePaymentStatus(
   const paidPesos = paid / 100;
   const remainingPesos = remaining / 100;
   const requiredDepositPesos = requiredDeposit / 100;
+  const hasReportedPayment = Boolean(paymentReportedAt);
 
   // Case 1: Total is 0
   if (total === 0) {
@@ -59,6 +64,7 @@ export function derivePaymentStatus(
       requiredDepositPesos: 0,
       isFullyPaid: true,
       isDepositCovered: true,
+      isReportedByCustomer: false,
     };
   }
 
@@ -75,6 +81,7 @@ export function derivePaymentStatus(
       requiredDepositPesos,
       isFullyPaid: true,
       isDepositCovered: true,
+      isReportedByCustomer: hasReportedPayment,
     };
   }
 
@@ -91,6 +98,7 @@ export function derivePaymentStatus(
       requiredDepositPesos,
       isFullyPaid: false,
       isDepositCovered: true,
+      isReportedByCustomer: hasReportedPayment,
     };
   }
 
@@ -108,10 +116,28 @@ export function derivePaymentStatus(
       requiredDepositPesos,
       isFullyPaid: false,
       isDepositCovered: false,
+      isReportedByCustomer: hasReportedPayment,
     };
   }
 
-  // Case 5: Zero paid (amount_paid == 0)
+  // Case 5: Customer reported payment, but zero confirmed by Admin yet
+  if (hasReportedPayment) {
+    return {
+      status: 'payment_reported',
+      label: 'Pago reportado · por verificar',
+      badgeClass: 'bg-amber-50 text-amber-900 border-amber-300',
+      detail: 'Transferencia reportada por el cliente · Pendiente de confirmación',
+      amountPaidPesos: 0,
+      totalPesos,
+      remainingPesos: totalPesos,
+      requiredDepositPesos,
+      isFullyPaid: false,
+      isDepositCovered: false,
+      isReportedByCustomer: true,
+    };
+  }
+
+  // Case 6: Zero paid, not yet reported
   return {
     status: 'unpaid',
     label: 'Pendiente de pago',
@@ -123,5 +149,6 @@ export function derivePaymentStatus(
     requiredDepositPesos,
     isFullyPaid: false,
     isDepositCovered: false,
+    isReportedByCustomer: false,
   };
 }
