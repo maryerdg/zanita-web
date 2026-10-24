@@ -21,9 +21,5 @@ export default async function AdminAjustesPage() {
     instructions: '',
   };
 
-  return (
-    <div className="py-6 px-4 sm:px-6 lg:px-8">
-      <AjustesClient initialSettings={settings || fallbackSettings} />
-    </div>
-  );
+  return <AjustesClient initialSettings={settings || fallbackSettings} />;
 }

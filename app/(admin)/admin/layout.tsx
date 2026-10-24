@@ -26,10 +26,12 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#261C19] flex flex-col font-sans">
+    <div className="min-h-[calc(100vh-64px)] bg-[#FAF7F2] text-[#261C19] flex flex-col md:flex-row font-sans">
       <AdminNav userEmail={user.email || 'Admin'} />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto w-full">
+          {children}
+        </div>
       </main>
     </div>
   )

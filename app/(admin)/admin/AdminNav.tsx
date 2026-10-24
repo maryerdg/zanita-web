@@ -32,65 +32,105 @@ export default function AdminNav({ userEmail }: { userEmail: string }) {
   }
 
   return (
-    <aside className="w-64 bg-white border-r border-[#E8DCC4] flex flex-col shrink-0">
-      {/* Brand header */}
-      <div className="p-6 border-b border-[#E8DCC4]">
-        <div className="flex items-center gap-2">
-          <span className="font-serif font-black text-2xl tracking-tight text-[#A73832]">
-            Zanita
-          </span>
-          <span className="text-[10px] uppercase font-bold tracking-widest bg-[#F09CA9]/30 text-[#A73832] px-2 py-0.5 rounded-full">
-            Admin
+    <>
+      {/* Mobile Top Navigation Bar (< md) */}
+      <div className="md:hidden w-full bg-white border-b border-[#E8DCC4] sticky top-0 z-20">
+        <div className="px-4 py-2.5 flex items-center justify-between border-b border-[#F2ECE1]">
+          <div className="flex items-center gap-2">
+            <span className="font-serif font-black text-lg tracking-tight text-[#A73832]">
+              Zanita
+            </span>
+            <span className="text-[9px] uppercase font-bold tracking-widest bg-[#F09CA9]/30 text-[#A73832] px-1.5 py-0.5 rounded-full">
+              Admin
+            </span>
+          </div>
+          <span className="text-[11px] text-[#6E564F] font-mono truncate max-w-[180px]" title={userEmail}>
+            {userEmail}
           </span>
         </div>
-        <p className="text-xs text-[#6E564F] mt-1 font-mono truncate" title={userEmail}>
-          {userEmail}
-        </p>
+        <nav className="flex items-center gap-1.5 p-2 overflow-x-auto no-scrollbar" aria-label="Navegación Admin Móvil">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            const active = isActive(item)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  active
+                    ? 'bg-[#A73832] text-white shadow-2xs'
+                    : 'text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19]'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : 'text-[#6E564F]'}`} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon
-          const active = isActive(item)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-[#A73832] text-white shadow-xs font-semibold'
-                  : 'text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19]'
-              }`}
-            >
-              <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-[#6E564F]'}`} />
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
-      </nav>
+      {/* Desktop / Tablet Sidebar (>= md) */}
+      <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-white border-r border-[#E8DCC4] shrink-0 self-stretch">
+        {/* Brand header */}
+        <div className="p-6 border-b border-[#E8DCC4]">
+          <div className="flex items-center gap-2">
+            <span className="font-serif font-black text-2xl tracking-tight text-[#A73832]">
+              Zanita
+            </span>
+            <span className="text-[10px] uppercase font-bold tracking-widest bg-[#F09CA9]/30 text-[#A73832] px-2 py-0.5 rounded-full">
+              Admin
+            </span>
+          </div>
+          <p className="text-xs text-[#6E564F] mt-1 font-mono truncate" title={userEmail}>
+            {userEmail}
+          </p>
+        </div>
 
-      {/* Footer links */}
-      <div className="p-4 border-t border-[#E8DCC4] space-y-2">
-        <Link
-          href="/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19] transition-colors"
-        >
-          <span>Ver tienda</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-        <Link
-          href="/productos"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19] transition-colors"
-        >
-          <span>Ver catálogo</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-    </aside>
+        {/* Nav items */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            const active = isActive(item)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-[#A73832] text-white shadow-xs font-semibold'
+                    : 'text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19]'
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-[#6E564F]'}`} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Footer links */}
+        <div className="p-4 border-t border-[#E8DCC4] space-y-2">
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19] transition-colors"
+          >
+            <span>Ver tienda</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href="/productos"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19] transition-colors"
+          >
+            <span>Ver catálogo</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </aside>
+    </>
   )
 }
