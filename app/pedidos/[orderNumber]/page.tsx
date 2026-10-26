@@ -57,6 +57,7 @@ export default async function OrderPage({ params }: PageProps) {
       delivery_point:zanita_delivery_points(
         name,
         address,
+        public_reference,
         type,
         requires_special_pickup_permission
       ),
@@ -96,6 +97,7 @@ export default async function OrderPage({ params }: PageProps) {
     delivery_point: dpRaw || {
       name: order.delivery_name || 'Punto de entrega',
       address: order.delivery_address || '',
+      public_reference: null,
       type: order.delivery_type || 'standard',
       requires_special_pickup_permission: order.delivery_type === 'special',
     },

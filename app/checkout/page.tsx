@@ -40,7 +40,7 @@ export default async function CheckoutPage() {
   // 3. Fetch active delivery points from DB
   const { data: rawDeliveryPoints } = await supabase
     .from('zanita_delivery_points')
-    .select('id, name, address, instructions, type, requires_quote, delivery_fee_cents, requires_special_pickup_permission, is_active, display_order')
+    .select('id, name, address, instructions, public_reference, type, requires_quote, delivery_fee_cents, requires_special_pickup_permission, is_active, display_order')
     .eq('is_active', true)
     .order('display_order', { ascending: true });
 

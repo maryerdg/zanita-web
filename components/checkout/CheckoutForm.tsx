@@ -721,9 +721,20 @@ export default function CheckoutForm({
                               Entrega a domicilio fuera de puntos oficiales. El costo de entrega se definirá según tu ubicación.
                             </p>
                           ) : (
-                            <p className="text-xs text-[#6E564F] mt-1">
-                              Punto oficial de entrega. Sin costo de entrega.
-                            </p>
+                            <div className="text-xs text-[#6E564F] mt-1 space-y-0.5">
+                              {dp.public_reference ? (
+                                <p className="font-semibold text-[#261C19]">
+                                  {dp.public_reference}
+                                </p>
+                              ) : (
+                                <p>Punto oficial de entrega. Sin costo de entrega.</p>
+                              )}
+                              {dp.instructions && (
+                                <p className="text-[11px] text-[#8C6D62] italic">
+                                  {dp.instructions}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>

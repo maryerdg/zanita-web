@@ -98,15 +98,11 @@ export default function DeliveryClient({
 
     const publicRef = formData.get('public_reference') as string
     const instructions = formData.get('instructions') as string
-    const latStr = formData.get('latitude') as string
-    const lngStr = formData.get('longitude') as string
 
     startTransition(async () => {
       const res = await updateDeliveryPoint(pointId, {
         public_reference: publicRef || null,
         instructions: instructions || null,
-        latitude: latStr ? parseFloat(latStr) : null,
-        longitude: lngStr ? parseFloat(lngStr) : null,
       })
 
       if (res.error) {
@@ -120,8 +116,6 @@ export default function DeliveryClient({
                   ...p,
                   public_reference: publicRef || null,
                   instructions: instructions || null,
-                  latitude: latStr ? parseFloat(latStr) : null,
-                  longitude: lngStr ? parseFloat(lngStr) : null,
                 }
               : p
           )

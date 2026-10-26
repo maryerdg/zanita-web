@@ -27,6 +27,24 @@ export default async function DeliveryPointsPage() {
     }
   }
 
+  // Fetch active standard official points from canonical database
+  const { data: dbPoints } = await supabase
+    .from('zanita_delivery_points')
+    .select('id, name, address, instructions, public_reference, type, is_active, display_order')
+    .eq('is_active', true)
+    .eq('type', 'standard')
+    .order('display_order', { ascending: true });
+
+  const pointsList =
+    dbPoints && dbPoints.length > 0
+      ? dbPoints
+      : officialZones.map((name, i) => ({
+          id: `fallback-${i}`,
+          name,
+          public_reference: null,
+          instructions: null,
+        }));
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 md:py-12 space-y-6 md:space-y-8">
       {/* Page Header */}
@@ -66,11 +84,23 @@ export default async function DeliveryPointsPage() {
             <p className="text-xs text-[#6E564F] mt-1">Selecciona uno de nuestros puntos disponibles al finalizar tu pedido.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-[#261C19]">
-            {officialZones.map((zone) => (
-              <div key={zone} className="flex items-center gap-2 bg-white py-2 px-3 rounded-lg border border-[#E4D5C1]/70">
-                <CheckCircle2 className="w-4 h-4 text-[#4F7942] shrink-0" />
-                <span className="text-xs font-bold">{zone}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm font-semibold text-[#261C19]">
+            {pointsList.map((pt) => (
+              <div key={pt.id} className="flex flex-col gap-0.5 bg-white py-2 px-3 rounded-lg border border-[#E4D5C1]/70">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#4F7942] shrink-0" />
+                  <span className="text-xs font-bold">{pt.name}</span>
+                </div>
+                {pt.public_reference && (
+                  <p className="text-[11px] text-[#6E564F] pl-6 font-normal">
+                    {pt.public_reference}
+                  </p>
+                )}
+                {pt.instructions && (
+                  <p className="text-[10px] text-[#8C6D62] pl-6 font-normal italic">
+                    {pt.instructions}
+                  </p>
+                )}
               </div>
             ))}
           </div>

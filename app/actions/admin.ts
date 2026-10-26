@@ -768,24 +768,50 @@ export async function updateDeliveryPoint(pointId: string, updates: {
   is_active?: boolean
   public_reference?: string | null
   instructions?: string | null
-  latitude?: number | null
-  longitude?: number | null
 }) {
   const auth = await verifyAdminCaller()
   if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
 
-  const { error } = await auth.supabase
+  // Whitelist payload strictly to approved editable fields
+  const payload: {
+    is_active?: boolean
+    public_reference?: string | null
+    instructions?: string | null
+    updated_at: string
+  } = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if (typeof updates.is_active === 'boolean') {
+    payload.is_active = updates.is_active
+  }
+  if (updates.public_reference !== undefined) {
+    payload.public_reference = updates.public_reference ? updates.public_reference.trim() : null
+  }
+  if (updates.instructions !== undefined) {
+    payload.instructions = updates.instructions ? updates.instructions.trim() : null
+  }
+
+  const { data, error } = await auth.supabase
     .from('zanita_delivery_points')
-    .update(updates)
+    .update(payload)
     .eq('id', pointId)
+    .select('id')
 
   if (error) {
     console.error('Error updating delivery point:', error)
     return { error: `No se pudo actualizar el punto: ${error.message}` }
   }
 
+  if (!data || data.length !== 1) {
+    return { error: 'No se encontró el punto de entrega especificado.' }
+  }
+
   revalidatePath('/admin/entregas')
   revalidatePath('/admin')
+  revalidatePath('/checkout')
+  revalidatePath('/puntos-de-entrega')
+  revalidatePath('/')
   return { success: true, message: 'Punto de entrega actualizado' }
 }
 

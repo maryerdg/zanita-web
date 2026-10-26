@@ -184,7 +184,7 @@ export default function AdminNav({ userEmail }: { userEmail: string }) {
               onClick={() => {
                 markAsRead(n.id);
                 setShowNotifications(false);
-                router.push(`/admin/pedidos?order=${n.orderNumber}`);
+                router.push(n.target || `/admin/pedidos?order=${encodeURIComponent(n.orderNumber)}`);
               }}
               className={`pt-2 pb-1.5 px-2 rounded-xl text-xs transition-colors cursor-pointer flex items-start gap-2.5 ${
                 n.read ? 'opacity-70 hover:bg-[#FAF7F2]' : 'bg-[#FAF7F2] font-semibold hover:bg-[#F2ECE1]'
@@ -205,7 +205,9 @@ export default function AdminNav({ userEmail }: { userEmail: string }) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] text-[#261C19] truncate">{n.title}</span>
+                  <span className="text-[11px] text-[#261C19] truncate">
+                    {n.title} <span className="font-mono text-[#A73832] font-bold">{n.orderNumber}</span>
+                  </span>
                   <span className="text-[9px] text-stone-400 font-mono">
                     {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>

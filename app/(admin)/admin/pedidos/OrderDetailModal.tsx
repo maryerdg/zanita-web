@@ -63,6 +63,8 @@ export function OrderDetailModal({
     order.deposit_required_pct
   );
   const isPaymentThresholdMet = order.amount_paid_cents >= requiredDepositCents;
+  const isFullyPaid = (order.amount_paid_cents || 0) >= order.total_amount_cents;
+  const canRegisterPayment = order.status !== 'pending_approval' && !isFullyPaid;
 
   const handleAction = async (nextStatus: CanonicalOrderStatus) => {
     setIsUpdating(true);
@@ -173,7 +175,7 @@ export function OrderDetailModal({
                 </p>
               </div>
 
-              {!showPaymentForm && (
+              {!showPaymentForm && canRegisterPayment && (
                 <div className="pt-1">
                   <button
                     onClick={() => {
@@ -191,7 +193,7 @@ export function OrderDetailModal({
           )}
 
           {/* Payment Input Form Modal/Card */}
-          {showPaymentForm && (
+          {showPaymentForm && canRegisterPayment && (
             <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8DCC4] space-y-3">
               <h4 className="font-bold text-xs uppercase tracking-wider text-[#261C19] flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4 text-emerald-600" />
@@ -371,7 +373,7 @@ export function OrderDetailModal({
               <h3 className="font-semibold text-stone-700 text-[11px] uppercase tracking-wider">
                 Resumen Financiero
               </h3>
-              {!showPaymentForm && (
+              {!showPaymentForm && canRegisterPayment && (
                 <button
                   type="button"
                   onClick={() => {

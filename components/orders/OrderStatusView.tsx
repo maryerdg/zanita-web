@@ -63,6 +63,7 @@ interface OrderData {
   delivery_point?: {
     name: string;
     address: string;
+    public_reference?: string | null;
     type?: string;
     requires_special_pickup_permission?: boolean;
   } | null;
@@ -552,9 +553,13 @@ export function OrderStatusView({
             <p className="font-medium text-[#261C19]">
               {order.delivery_name || order.delivery_point?.name || 'Entrega a domicilio'}
             </p>
-            <p className="text-[#6E564F]">
-              {order.delivery_address || order.delivery_point?.address || 'Por confirmar'}
-            </p>
+            {order.delivery_address || order.delivery_point?.address || order.delivery_point?.public_reference ? (
+              <p className="text-[#6E564F]">
+                {order.delivery_address || order.delivery_point?.address || order.delivery_point?.public_reference}
+              </p>
+            ) : order.status === 'pending_approval' ? (
+              <p className="italic text-[#A75D28]">Por confirmar</p>
+            ) : null}
           </div>
         </div>
 

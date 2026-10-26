@@ -22,9 +22,12 @@ export type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected';
 export interface AdminNotification {
   id: string;
   type: 'new_order' | 'payment_reported' | 'status_change';
+  orderId?: string;
   orderNumber: string;
   title: string;
   subtitle: string;
+  target?: string;
+  eventKey?: string;
   timestamp: Date;
   read: boolean;
 }
@@ -132,6 +135,7 @@ export function AdminOrdersRealtimeProvider({
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
   const wasReconnectingRef = useRef<boolean>(false);
+  const refreshDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cross-tab BroadcastChannel setup
   useEffect(() => {
@@ -240,22 +244,27 @@ export function AdminOrdersRealtimeProvider({
     setNotifications([]);
   }, []);
 
-  // Shared refresh handler for canonical data
+  // Shared debounced refresh handler for canonical data
   const refreshCanonicalData = useCallback(
     (reason: string, payload?: unknown) => {
-      try {
-        // 1. Refresh Server Components (Dashboard metrics, etc.)
-        router.refresh();
-
-        // 2. Dispatch custom event for mounted client components (OrdersClient, KitchenQueue)
-        window.dispatchEvent(
-          new CustomEvent('zanita:orders-refresh', {
-            detail: { reason, payload },
-          })
-        );
-      } catch {
-        // Ignore refresh errors
+      if (refreshDebounceTimerRef.current) {
+        clearTimeout(refreshDebounceTimerRef.current);
       }
+      refreshDebounceTimerRef.current = setTimeout(() => {
+        try {
+          // 1. Refresh Server Components (Dashboard metrics, etc.)
+          router.refresh();
+
+          // 2. Dispatch custom event for mounted client components (OrdersClient, KitchenQueue)
+          window.dispatchEvent(
+            new CustomEvent('zanita:orders-refresh', {
+              detail: { reason, payload },
+            })
+          );
+        } catch {
+          // Ignore refresh errors
+        }
+      }, 250);
     },
     [router]
   );
@@ -324,22 +333,43 @@ export function AdminOrdersRealtimeProvider({
           schema: 'public',
           table: 'zanita_orders',
         },
-        (payload) => {
+        async (payload) => {
           const newOrder = payload.new as {
             id?: string;
             order_number?: string;
             status?: string;
           };
           const orderId = newOrder?.id || '';
-          const orderNumber = newOrder?.order_number || 'Nuevo pedido';
-          const eventKey = `new_order:${orderId}`;
+          let orderNumber = newOrder?.order_number;
+
+          if (!orderNumber || !orderNumber.startsWith('ZAN-')) {
+            try {
+              const { data: dbOrder } = await supabase
+                .from('zanita_orders')
+                .select('order_number')
+                .eq('id', orderId)
+                .maybeSingle();
+              if (dbOrder?.order_number) {
+                orderNumber = dbOrder.order_number;
+              }
+            } catch {
+              // Ignore lookup error
+            }
+          }
+
+          const actualOrderNumber =
+            orderNumber || (orderId ? `ZAN-${orderId.slice(0, 4)}` : 'ZAN-NUEVO');
+          const eventKey = `new_order:${orderId || actualOrderNumber}`;
 
           const notif: AdminNotification = {
             id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
             type: 'new_order',
-            orderNumber,
-            title: `Nuevo pedido ${orderNumber}`,
+            orderId,
+            orderNumber: actualOrderNumber,
+            title: 'Nuevo pedido',
             subtitle: 'Requiere revisión en el Centro de Operaciones',
+            target: `/admin/pedidos?order=${encodeURIComponent(actualOrderNumber)}`,
+            eventKey,
             timestamp: new Date(),
             read: false,
           };
@@ -355,7 +385,7 @@ export function AdminOrdersRealtimeProvider({
           schema: 'public',
           table: 'zanita_orders',
         },
-        (payload) => {
+        async (payload) => {
           const newOrder = payload.new as {
             id?: string;
             order_number?: string;
@@ -364,20 +394,40 @@ export function AdminOrdersRealtimeProvider({
           };
 
           const orderId = newOrder?.id || '';
-          const orderNumber = newOrder?.order_number || 'Pedido';
+          let orderNumber = newOrder?.order_number;
 
           // Detect payment reported using ONLY payload.new and stable identity:
           // payment_reported:<order_id>:<payment_reported_at>
           if (newOrder?.payment_reported_at) {
+            if (!orderNumber || !orderNumber.startsWith('ZAN-')) {
+              try {
+                const { data: dbOrder } = await supabase
+                  .from('zanita_orders')
+                  .select('order_number')
+                  .eq('id', orderId)
+                  .maybeSingle();
+                if (dbOrder?.order_number) {
+                  orderNumber = dbOrder.order_number;
+                }
+              } catch {
+                // Ignore lookup error
+              }
+            }
+
+            const actualOrderNumber =
+              orderNumber || (orderId ? `ZAN-${orderId.slice(0, 4)}` : 'ZAN-PEDIDO');
             const paymentEventKey = `payment_reported:${orderId}:${newOrder.payment_reported_at}`;
 
             if (!handledEventsRef.current.has(paymentEventKey)) {
               const notif: AdminNotification = {
                 id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                 type: 'payment_reported',
-                orderNumber,
-                title: `Pago reportado en ${orderNumber}`,
+                orderId,
+                orderNumber: actualOrderNumber,
+                title: 'Pago reportado',
                 subtitle: 'Comprobante listo para verificación',
+                target: `/admin/pedidos?order=${encodeURIComponent(actualOrderNumber)}`,
+                eventKey: paymentEventKey,
                 timestamp: new Date(),
                 read: false,
               };
@@ -426,6 +476,9 @@ export function AdminOrdersRealtimeProvider({
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      if (refreshDebounceTimerRef.current) {
+        clearTimeout(refreshDebounceTimerRef.current);
+      }
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
@@ -483,7 +536,7 @@ export function AdminOrdersRealtimeProvider({
                 <span className="text-[10px] text-stone-400 font-mono">Ahora</span>
               </div>
               <h4 className="font-bold text-xs text-[#261C19] mt-1 truncate">
-                {activeToast.title}
+                {activeToast.title} <span className="font-mono text-[#A73832]">{activeToast.orderNumber}</span>
               </h4>
               <p className="text-[11px] text-[#6E564F] line-clamp-2 mt-0.5">
                 {activeToast.subtitle}
@@ -494,7 +547,7 @@ export function AdminOrdersRealtimeProvider({
                   type="button"
                   onClick={() => {
                     dismissToast();
-                    router.push(`/admin/pedidos?order=${activeToast.orderNumber}`);
+                    router.push(activeToast.target || `/admin/pedidos?order=${encodeURIComponent(activeToast.orderNumber)}`);
                   }}
                   className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#A73832] text-white hover:bg-[#87201D] shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
                 >

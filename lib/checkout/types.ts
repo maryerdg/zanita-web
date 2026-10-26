@@ -11,6 +11,7 @@ export type DeliveryPoint = {
   name: string;
   address: string | null;
   instructions: string | null;
+  public_reference?: string | null;
   type: 'standard' | 'special' | 'other';
   requires_quote: boolean;
   delivery_fee_cents: number | null;

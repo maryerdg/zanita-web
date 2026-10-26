@@ -12,7 +12,8 @@ export default async function AdminOrdersPage({
   const resolvedParams = await searchParams;
   const initialFilter = resolvedParams?.filter || 'hoy';
   const initialTargetOrder = resolvedParams?.order;
-  const { orders = [], error } = await getAdminOrdersList(initialFilter);
+  // Always load canonical complete collection ('todos') on server
+  const { orders = [], error } = await getAdminOrdersList('todos');
 
   if (error) {
     return (

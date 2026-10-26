@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ShoppingBag,
   ChefHat,
@@ -16,7 +16,7 @@ import type { AdminOrderListItem } from '@/app/actions/admin-orders';
 import { getAdminOrdersList } from '@/app/actions/admin-orders';
 import { getOperationalStatusMeta } from '@/lib/orders/operational-status';
 import { derivePaymentStatus } from '@/lib/orders/payment-status';
-import { formatTimeShort, formatDateCompact, isTijuanaToday } from '@/lib/time/tijuana';
+import { formatTimeShort, formatDateCompact, isTijuanaToday, getTijuanaDateString } from '@/lib/time/tijuana';
 import { OrderDetailModal } from './OrderDetailModal';
 import { KitchenQueueView } from './KitchenQueueView';
 
@@ -41,81 +41,175 @@ export function OrdersClient({
   initialFilter = 'hoy',
   initialTargetOrder,
 }: OrdersClientProps) {
-  const [orders, setOrders] = useState<AdminOrderListItem[]>(initialOrders);
+  // ONE Canonical Complete Collection of orders
+  const [canonicalOrders, setCanonicalOrders] = useState<AdminOrderListItem[]>(initialOrders);
   const [prevInitialOrders, setPrevInitialOrders] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState<string>(initialFilter);
   const [activeView, setActiveView] = useState<'list' | 'kitchen'>('list');
-
-  // Find initial match if target order was supplied
-  const initialMatch = initialTargetOrder
-    ? initialOrders.find((o) => o.order_number === initialTargetOrder) ?? null
-    : null;
-  const [selectedOrder, setSelectedOrder] = useState<AdminOrderListItem | null>(initialMatch);
-  const [isModalOpen, setIsModalOpen] = useState(Boolean(initialMatch));
   const [isLoading, setIsLoading] = useState(false);
+
+  // Request generation / latest-request-wins ref
+  const syncRequestIdRef = useRef<number>(0);
 
   // Sync state if initialOrders changes from server revalidation (React recommended pattern)
   if (initialOrders !== prevInitialOrders) {
     setPrevInitialOrders(initialOrders);
-    setOrders(initialOrders);
+    setCanonicalOrders(initialOrders);
   }
 
-  // Counters for tabs
-  const pendingCount = orders.filter((o) => o.status === 'pending_approval').length;
-  const toPrepareCount = orders.filter((o) => o.status === 'confirmed').length;
+  const tijuanaToday = useMemo(() => getTijuanaDateString(), []);
 
-  const refreshOrders = useCallback(
-    async (filterToLoad: string = activeFilter) => {
-      setIsLoading(true);
-      try {
-        const res = await getAdminOrdersList(filterToLoad);
-        if (res.orders) {
-          setOrders(res.orders);
-        }
-      } finally {
+  // Canonical refresh function: ALWAYS fetches complete collection ('todos')
+  const refreshCanonicalOrders = useCallback(async () => {
+    const thisRequestId = ++syncRequestIdRef.current;
+    setIsLoading(true);
+    try {
+      const res = await getAdminOrdersList('todos');
+      // If a newer request was dispatched while this was in-flight, discard stale result
+      if (thisRequestId !== syncRequestIdRef.current) return;
+      if (res.orders) {
+        setCanonicalOrders(res.orders);
+      }
+    } finally {
+      if (thisRequestId === syncRequestIdRef.current) {
         setIsLoading(false);
       }
-    },
-    [activeFilter]
-  );
+    }
+  }, []);
+
+  // Derived Tab Counters: strictly calculated from canonicalOrders
+  const counts = useMemo(() => {
+    let hoy = 0;
+    let porAprobar = 0;
+    let porPreparar = 0;
+    let listos = 0;
+    let proximos = 0;
+    let completados = 0;
+
+    for (const o of canonicalOrders) {
+      if (o.status === 'pending_approval') porAprobar++;
+      if (o.status === 'confirmed') porPreparar++;
+      if (o.status === 'ready') listos++;
+      if (o.status === 'delivered') completados++;
+
+      if (o.requested_date === tijuanaToday && o.status !== 'cancelled' && o.status !== 'rejected') {
+        hoy++;
+      }
+      if (o.requested_date > tijuanaToday && !['cancelled', 'rejected', 'delivered'].includes(o.status)) {
+        proximos++;
+      }
+    }
+
+    return {
+      hoy,
+      por_aprobar: porAprobar,
+      por_preparar: porPreparar,
+      listos,
+      proximos,
+      completados,
+      todos: canonicalOrders.length,
+    };
+  }, [canonicalOrders, tijuanaToday]);
+
+  // Derived Filtered Orders: strictly derived from canonicalOrders in memory
+  const filteredOrders = useMemo(() => {
+    let list: AdminOrderListItem[];
+    switch (activeFilter) {
+      case 'hoy':
+        list = canonicalOrders.filter(
+          (o) => o.requested_date === tijuanaToday && o.status !== 'cancelled' && o.status !== 'rejected'
+        );
+        break;
+      case 'por_aprobar':
+        list = canonicalOrders.filter((o) => o.status === 'pending_approval');
+        break;
+      case 'por_preparar':
+        list = canonicalOrders.filter((o) => o.status === 'confirmed');
+        break;
+      case 'listos':
+        list = canonicalOrders.filter((o) => o.status === 'ready');
+        break;
+      case 'proximos':
+        list = canonicalOrders.filter(
+          (o) => o.requested_date > tijuanaToday && !['cancelled', 'rejected', 'delivered'].includes(o.status)
+        );
+        break;
+      case 'completados':
+        list = canonicalOrders.filter((o) => o.status === 'delivered');
+        break;
+      case 'todos':
+      default:
+        list = canonicalOrders;
+        break;
+    }
+
+    // Stable sort: pending_approval first, then requested_date asc, requested_time asc
+    return [...list].sort((a, b) => {
+      if (a.status === 'pending_approval' && b.status !== 'pending_approval') return -1;
+      if (a.status !== 'pending_approval' && b.status === 'pending_approval') return 1;
+      if (a.requested_date !== b.requested_date) {
+        return a.requested_date.localeCompare(b.requested_date);
+      }
+      return a.requested_time.localeCompare(b.requested_time);
+    });
+  }, [canonicalOrders, activeFilter, tijuanaToday]);
+
+  // Deep Link Target Order Safe Resolution via ID
+  const initialSelectedId = useMemo(() => {
+    if (!initialTargetOrder || !/^ZAN-\d+$/i.test(initialTargetOrder)) return null;
+    const match = initialOrders.find(
+      (o) => o.order_number.toUpperCase() === initialTargetOrder.toUpperCase()
+    );
+    return match?.id ?? null;
+  }, [initialTargetOrder, initialOrders]);
+
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(initialSelectedId);
+  const [isModalOpen, setIsModalOpen] = useState(Boolean(initialSelectedId));
+
+  // Derive selectedOrder reactively from canonicalOrders without useEffect setState
+  const selectedOrder = useMemo(() => {
+    if (!selectedOrderId) return null;
+    return canonicalOrders.find((o) => o.id === selectedOrderId) ?? null;
+  }, [canonicalOrders, selectedOrderId]);
+
+  // Safely open modal when deep-link target order query parameter is supplied dynamically
+  useEffect(() => {
+    if (!initialTargetOrder || !/^ZAN-\d+$/i.test(initialTargetOrder)) return;
+
+    const match = canonicalOrders.find(
+      (o) => o.order_number.toUpperCase() === initialTargetOrder.toUpperCase()
+    );
+    if (match && match.id !== selectedOrderId) {
+      const timer = setTimeout(() => {
+        setSelectedOrderId(match.id);
+        setIsModalOpen(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [initialTargetOrder, canonicalOrders, selectedOrderId]);
 
   // Realtime Live Update Listener
   useEffect(() => {
     const handleLiveRefresh = () => {
-      refreshOrders();
+      refreshCanonicalOrders();
     };
     window.addEventListener('zanita:orders-refresh', handleLiveRefresh);
     return () => {
       window.removeEventListener('zanita:orders-refresh', handleLiveRefresh);
     };
-  }, [refreshOrders]);
-
-  // Handle direct target order navigation if not in initial filter
-  useEffect(() => {
-    if (!initialTargetOrder || initialMatch) return;
-    let isMounted = true;
-    getAdminOrdersList('todos').then((res) => {
-      if (isMounted && res.orders) {
-        const found = res.orders.find((o) => o.order_number === initialTargetOrder);
-        if (found) {
-          setSelectedOrder(found);
-          setIsModalOpen(true);
-        }
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [initialTargetOrder, initialMatch]);
+  }, [refreshCanonicalOrders]);
 
   const handleFilterChange = (newFilter: string) => {
     setActiveFilter(newFilter);
-    refreshOrders(newFilter);
   };
 
   const handleOpenDetail = (order: AdminOrderListItem) => {
-    setSelectedOrder(order);
+    setSelectedOrderId(order.id);
     setIsModalOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setIsModalOpen(false);
   };
 
   return (
@@ -159,7 +253,7 @@ export function OrdersClient({
           </div>
 
           <button
-            onClick={() => refreshOrders(activeFilter)}
+            onClick={refreshCanonicalOrders}
             disabled={isLoading}
             className="p-2 rounded-xl border border-[#E8DCC4] bg-white text-[#6E564F] hover:text-[#A73832] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
             title="Actualizar lista"
@@ -174,12 +268,14 @@ export function OrdersClient({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-[#E8DCC4]/60">
           {FILTER_TABS.map((tab) => {
             const isActive = activeFilter === tab.id;
-            let badgeCount = null;
-            if (tab.id === 'por_aprobar' && pendingCount > 0) {
-              badgeCount = pendingCount;
-            } else if (tab.id === 'por_preparar' && toPrepareCount > 0) {
-              badgeCount = toPrepareCount;
-            }
+            const badgeCount =
+              tab.id === 'por_aprobar' && counts.por_aprobar > 0
+                ? counts.por_aprobar
+                : tab.id === 'por_preparar' && counts.por_preparar > 0
+                ? counts.por_preparar
+                : tab.id === 'listos' && counts.listos > 0
+                ? counts.listos
+                : null;
 
             return (
               <button
@@ -212,11 +308,11 @@ export function OrdersClient({
       {/* Main Content Area: List vs Kitchen View */}
       {activeView === 'kitchen' ? (
         <KitchenQueueView
-          orders={orders}
+          orders={canonicalOrders}
           onOpenOrder={handleOpenDetail}
-          onRefresh={() => refreshOrders(activeFilter)}
+          onRefresh={refreshCanonicalOrders}
         />
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#E8DCC4] p-12 text-center space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-[#FAF7F2] border border-[#E8DCC4] flex items-center justify-center mx-auto text-[#6E564F]">
             <ShoppingBag className="w-6 h-6" />
@@ -232,7 +328,7 @@ export function OrdersClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {orders.map((order) => {
+          {filteredOrders.map((order) => {
             const statusMeta = getOperationalStatusMeta(order.status);
             const paymentMeta = derivePaymentStatus(
               order.total_amount_cents,
@@ -310,7 +406,7 @@ export function OrdersClient({
                     </div>
 
                     <p className="text-[11px] text-[#6E564F] flex items-center gap-1 truncate">
-                      <MapPin className="w-3 h-3 text-[#A73832] shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-[#A73832] shrink-0" />
                       <span>
                         {isCetys
                           ? 'Pickup CETYS'
@@ -364,8 +460,8 @@ export function OrdersClient({
       <OrderDetailModal
         order={selectedOrder}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onStatusUpdated={() => refreshOrders(activeFilter)}
+        onClose={handleCloseDetail}
+        onStatusUpdated={refreshCanonicalOrders}
       />
     </div>
   );
