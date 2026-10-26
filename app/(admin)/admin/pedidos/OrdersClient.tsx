@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShoppingBag,
   ChefHat,
@@ -23,6 +23,7 @@ import { KitchenQueueView } from './KitchenQueueView';
 interface OrdersClientProps {
   initialOrders: AdminOrderListItem[];
   initialFilter?: string;
+  initialTargetOrder?: string;
 }
 
 const FILTER_TABS = [
@@ -35,29 +36,77 @@ const FILTER_TABS = [
   { id: 'todos', label: 'Todos' },
 ];
 
-export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersClientProps) {
+export function OrdersClient({
+  initialOrders,
+  initialFilter = 'hoy',
+  initialTargetOrder,
+}: OrdersClientProps) {
   const [orders, setOrders] = useState<AdminOrderListItem[]>(initialOrders);
+  const [prevInitialOrders, setPrevInitialOrders] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState<string>(initialFilter);
   const [activeView, setActiveView] = useState<'list' | 'kitchen'>('list');
-  const [selectedOrder, setSelectedOrder] = useState<AdminOrderListItem | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Find initial match if target order was supplied
+  const initialMatch = initialTargetOrder
+    ? initialOrders.find((o) => o.order_number === initialTargetOrder) ?? null
+    : null;
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrderListItem | null>(initialMatch);
+  const [isModalOpen, setIsModalOpen] = useState(Boolean(initialMatch));
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sync state if initialOrders changes from server revalidation (React recommended pattern)
+  if (initialOrders !== prevInitialOrders) {
+    setPrevInitialOrders(initialOrders);
+    setOrders(initialOrders);
+  }
 
   // Counters for tabs
   const pendingCount = orders.filter((o) => o.status === 'pending_approval').length;
   const toPrepareCount = orders.filter((o) => o.status === 'confirmed').length;
 
-  const refreshOrders = async (filterToLoad: string = activeFilter) => {
-    setIsLoading(true);
-    try {
-      const res = await getAdminOrdersList(filterToLoad);
-      if (res.orders) {
-        setOrders(res.orders);
+  const refreshOrders = useCallback(
+    async (filterToLoad: string = activeFilter) => {
+      setIsLoading(true);
+      try {
+        const res = await getAdminOrdersList(filterToLoad);
+        if (res.orders) {
+          setOrders(res.orders);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [activeFilter]
+  );
+
+  // Realtime Live Update Listener
+  useEffect(() => {
+    const handleLiveRefresh = () => {
+      refreshOrders();
+    };
+    window.addEventListener('zanita:orders-refresh', handleLiveRefresh);
+    return () => {
+      window.removeEventListener('zanita:orders-refresh', handleLiveRefresh);
+    };
+  }, [refreshOrders]);
+
+  // Handle direct target order navigation if not in initial filter
+  useEffect(() => {
+    if (!initialTargetOrder || initialMatch) return;
+    let isMounted = true;
+    getAdminOrdersList('todos').then((res) => {
+      if (isMounted && res.orders) {
+        const found = res.orders.find((o) => o.order_number === initialTargetOrder);
+        if (found) {
+          setSelectedOrder(found);
+          setIsModalOpen(true);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [initialTargetOrder, initialMatch]);
 
   const handleFilterChange = (newFilter: string) => {
     setActiveFilter(newFilter);
@@ -112,7 +161,7 @@ export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersCli
           <button
             onClick={() => refreshOrders(activeFilter)}
             disabled={isLoading}
-            className="p-2 rounded-xl border border-[#E8DCC4] bg-white text-[#6E564F] hover:text-[#A73832] hover:bg-[#FAF7F2] transition-colors"
+            className="p-2 rounded-xl border border-[#E8DCC4] bg-white text-[#6E564F] hover:text-[#A73832] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
             title="Actualizar lista"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -120,35 +169,38 @@ export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersCli
         </div>
       </div>
 
-      {/* Filter Tabs (Visible in List View) */}
+      {/* Filter Tabs Bar (only visible in List view) */}
       {activeView === 'list' && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-[#F2ECE1]">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-[#E8DCC4]/60">
           {FILTER_TABS.map((tab) => {
             const isActive = activeFilter === tab.id;
-            const showPendingBadge = tab.id === 'por_aprobar' && pendingCount > 0;
-            const showPrepareBadge = tab.id === 'por_preparar' && toPrepareCount > 0;
+            let badgeCount = null;
+            if (tab.id === 'por_aprobar' && pendingCount > 0) {
+              badgeCount = pendingCount;
+            } else if (tab.id === 'por_preparar' && toPrepareCount > 0) {
+              badgeCount = toPrepareCount;
+            }
 
             return (
               <button
                 key={tab.id}
                 onClick={() => handleFilterChange(tab.id)}
-                className={`relative px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[#261C19] text-white shadow-xs'
-                    : 'bg-white text-[#6E564F] hover:bg-[#FAF7F2] border border-transparent hover:border-[#E8DCC4]'
+                    ? 'bg-[#A73832] text-white shadow-2xs'
+                    : 'text-[#6E564F] hover:bg-white hover:text-[#261C19]'
                 }`}
               >
                 <span>{tab.label}</span>
-
-                {showPendingBadge && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white">
-                    {pendingCount}
-                  </span>
-                )}
-
-                {showPrepareBadge && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
-                    {toPrepareCount}
+                {badgeCount !== null && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      isActive
+                        ? 'bg-white text-[#A73832]'
+                        : 'bg-amber-100 text-amber-900 border border-amber-200'
+                    }`}
+                  >
+                    {badgeCount}
                   </span>
                 )}
               </button>
@@ -157,7 +209,7 @@ export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersCli
         </div>
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content Area: List vs Kitchen View */}
       {activeView === 'kitchen' ? (
         <KitchenQueueView
           orders={orders}
@@ -165,35 +217,28 @@ export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersCli
           onRefresh={() => refreshOrders(activeFilter)}
         />
       ) : orders.length === 0 ? (
-        /* Empty State */
-        <div className="bg-white rounded-2xl border border-[#E8DCC4] p-12 text-center max-w-md mx-auto space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-[#F5EBDC] text-[#A73832] flex items-center justify-center mx-auto">
-            <ShoppingBag className="w-7 h-7" />
+        <div className="bg-white rounded-2xl border border-[#E8DCC4] p-12 text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#FAF7F2] border border-[#E8DCC4] flex items-center justify-center mx-auto text-[#6E564F]">
+            <ShoppingBag className="w-6 h-6" />
           </div>
           <h3 className="font-serif font-bold text-lg text-[#261C19]">
-            Sin Pedidos en esta Vista
+            No hay pedidos en esta vista
           </h3>
-          <p className="text-xs text-[#6E564F] leading-relaxed">
+          <p className="text-xs text-[#6E564F] max-w-sm mx-auto">
             {activeFilter === 'hoy'
-              ? 'No hay pedidos programados para entrega hoy en Tijuana. Los pedidos entrantes se ordenarán aquí automáticamente.'
-              : activeFilter === 'por_aprobar'
-              ? '¡Excelente! No hay pedidos pendientes de revisión o aprobación.'
-              : activeFilter === 'por_preparar'
-              ? 'No hay pedidos en cola de preparación en este momento.'
-              : activeFilter === 'listos'
-              ? 'No hay pedidos listos pendientes de entrega.'
-              : 'No se encontraron pedidos con el filtro seleccionado.'}
+              ? 'No hay pedidos programados para entrega el día de hoy.'
+              : `No se encontraron pedidos con el filtro "${activeFilter}".`}
           </p>
         </div>
       ) : (
-        /* Order Cards List (Mobile-Optimized) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {orders.map((order) => {
             const statusMeta = getOperationalStatusMeta(order.status);
             const paymentMeta = derivePaymentStatus(
               order.total_amount_cents,
               order.amount_paid_cents,
-              order.deposit_required_pct
+              order.deposit_required_pct,
+              order.payment_reported_at
             );
             const isToday = isTijuanaToday(order.requested_date);
             const isCetys = order.delivery_mode_snapshot === 'cetys_pickup';
@@ -203,7 +248,7 @@ export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersCli
               <div
                 key={order.id}
                 onClick={() => handleOpenDetail(order)}
-                className={`bg-white rounded-2xl p-4 border transition-all cursor-pointer flex flex-col justify-between shadow-xs hover:border-[#D46240]/50 hover:shadow-sm ${
+                className={`bg-white rounded-2xl border p-5 shadow-xs hover:border-[#A73832]/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between ${
                   order.status === 'pending_approval'
                     ? 'border-amber-300 ring-2 ring-amber-100'
                     : 'border-[#E8DCC4]'
@@ -303,7 +348,7 @@ export function OrdersClient({ initialOrders, initialFilter = 'hoy' }: OrdersCli
                       e.stopPropagation();
                       handleOpenDetail(order);
                     }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#A73832] font-semibold text-xs border border-[#E8DCC4] transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#A73832] font-semibold text-xs border border-[#E8DCC4] transition-colors cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Ver</span>
