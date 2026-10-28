@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Birthstone, Manrope } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/layout/Navbar';
@@ -31,11 +31,21 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: 'Zanita - Manzanas, Uvas y Charolas con Chamoy',
   description: 'Manzanas, uvas, charolas y snacks preparados con chamoy y toppings en Tijuana, B.C.',
-  icons: {
-    icon: '/brand/favicons/favicon-vertical-512.webp',
-    shortcut: '/brand/favicons/favicon-vertical-512.webp',
-    apple: '/brand/favicons/favicon-vertical-512.webp',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Zanita',
   },
+  icons: {
+    icon: '/icon-192.png',
+    shortcut: '/icon-192.png',
+    apple: '/icon-192.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#261C19',
 };
 
 export default async function RootLayout({

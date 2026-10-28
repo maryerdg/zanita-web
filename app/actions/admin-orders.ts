@@ -490,7 +490,7 @@ export async function adminUpdateOrderStatus(
   try {
     const { data: order, error: fetchErr } = await auth.supabase
       .from('zanita_orders')
-      .select('id, status, total_amount_cents, amount_paid_cents, deposit_required_pct, order_number')
+      .select('id, user_id, status, total_amount_cents, amount_paid_cents, deposit_required_pct, order_number')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -521,6 +521,15 @@ export async function adminUpdateOrderStatus(
     if (updateErr) {
       console.error('Error updating order status:', updateErr);
       return { success: false, error: 'Error en base de datos al actualizar estado' };
+    }
+
+    // Database trigger automatically inserts notification outbox event (Section 1 & 2).
+    // Request background push dispatch:
+    try {
+      const { triggerPushDispatch } = await import('@/lib/push/sender');
+      triggerPushDispatch();
+    } catch (pushErr) {
+      console.error('Failed to trigger customer push dispatch:', pushErr);
     }
 
     revalidatePath('/admin');
@@ -564,7 +573,7 @@ export async function adminConfirmPaymentAndOrder(
 
     const { data: order, error: fetchErr } = await auth.supabase
       .from('zanita_orders')
-      .select('id, status, total_amount_cents, amount_paid_cents, deposit_required_pct, order_number')
+      .select('id, user_id, status, total_amount_cents, amount_paid_cents, deposit_required_pct, order_number')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -611,6 +620,17 @@ export async function adminConfirmPaymentAndOrder(
     if (updErr) {
       console.error('adminConfirmPaymentAndOrder update error:', updErr);
       return { success: false, error: 'Error al registrar el pago en base de datos.' };
+    }
+
+    // Database trigger automatically inserts payment_confirmed outbox event (Section 1 & 2).
+    // Request background push dispatch:
+    if (nextStatus === 'confirmed') {
+      try {
+        const { triggerPushDispatch } = await import('@/lib/push/sender');
+        triggerPushDispatch();
+      } catch (pushErr) {
+        console.error('Failed to trigger customer push dispatch on confirmation:', pushErr);
+      }
     }
 
     revalidatePath('/admin');

@@ -22,6 +22,7 @@ import {
 import { getCustomerStatusMeta } from '@/lib/orders/customer-status';
 import { derivePaymentStatus } from '@/lib/orders/payment-status';
 import { reportCustomerOrderPayment, type BankTransferSettings } from '@/app/actions/orders';
+import { OrderPushPrompt } from '@/components/push/OrderPushPrompt';
 
 interface OrderItemOption {
   id: string;
@@ -212,6 +213,9 @@ export function OrderStatusView({
           </p>
         </div>
       </div>
+
+      {/* Non-blocking push notification opt-in prompt */}
+      <OrderPushPrompt />
 
       {/* Primary Payment Section when in deposit_pending */}
       {isApprovedWaitingPayment && (

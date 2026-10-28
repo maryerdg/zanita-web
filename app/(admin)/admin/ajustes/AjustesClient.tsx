@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { CreditCard, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { saveAdminPaymentSettings, type AdminPaymentBankSettings } from '@/app/actions/admin';
+import { AdminPushToggle } from '@/components/push/AdminPushToggle';
 
 export function AjustesClient({
   initialSettings,
@@ -197,6 +198,9 @@ export function AjustesClient({
           </div>
         </form>
       </div>
+
+      {/* Push Notifications Section */}
+      <AdminPushToggle />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getCustomerStatusMeta } from '@/lib/orders/customer-status';
 import { derivePaymentStatus } from '@/lib/orders/payment-status';
+import { CustomerPushToggle } from '@/components/push/CustomerPushToggle';
 
 export interface CustomerOrderListItem {
   id: string;
@@ -335,6 +336,9 @@ export default function MiCuentaClient({
               </form>
             </div>
           )}
+
+          {/* Customer Push Notifications */}
+          <CustomerPushToggle />
         </div>
       </div>
     </div>

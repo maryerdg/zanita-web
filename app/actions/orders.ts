@@ -38,7 +38,20 @@ export async function submitCheckoutOrder(payload: SubmitOrderPayload): Promise<
     }
 
     // Delegate to testable application service
-    return await submitOrderWithClient(supabase, payload);
+    const result = await submitOrderWithClient(supabase, payload);
+
+    if (result.success && result.orderId && !result.isIdempotentReplay) {
+      // Database trigger owns notification intent creation (Section 1 & 2).
+      // Request immediate background dispatch:
+      try {
+        const { triggerPushDispatch } = await import('@/lib/push/sender');
+        triggerPushDispatch({ eventKey: `new_order:${result.orderId}` });
+      } catch (pushErr) {
+        console.error('Failed to trigger push dispatch:', pushErr);
+      }
+    }
+
+    return result;
   } catch {
     return {
       success: false,
@@ -159,20 +172,7 @@ export async function reportCustomerOrderPayment(
 
     const sanitizedRef = reference ? reference.trim().slice(0, 50) : null;
 
-    // 1. Try public.report_order_payment RPC
-    const { data: rpcData, error: rpcError } = await supabase.rpc('report_order_payment', {
-      p_order_id: orderId,
-      p_reference: sanitizedRef,
-    });
-
-    if (!rpcError && rpcData?.success) {
-      revalidatePath('/mi-cuenta');
-      revalidatePath('/admin');
-      revalidatePath('/admin/pedidos');
-      return { success: true };
-    }
-
-    // 2. Fallback in case RPC is not yet in DB: verified server-side update
+    // Fetch order first to verify owner and have identifiers ready for notifications
     const { data: order, error: fetchErr } = await supabase
       .from('zanita_orders')
       .select('id, user_id, status, order_number, payment_reported_at')
@@ -187,28 +187,53 @@ export async function reportCustomerOrderPayment(
       return { success: false, error: 'El pedido no se encuentra en espera de pago.' };
     }
 
-    const nowIso = new Date().toISOString();
-    const { error: updErr } = await supabase
-      .from('zanita_orders')
-      .update({
-        payment_reported_at: order.payment_reported_at || nowIso,
-        payment_reference: sanitizedRef,
-        updated_at: nowIso,
-      })
-      .eq('id', orderId)
-      .eq('user_id', user.id);
+    // 1. Try public.report_order_payment RPC
+    let reportSaved = false;
+    const { data: rpcData, error: rpcError } = await supabase.rpc('report_order_payment', {
+      p_order_id: orderId,
+      p_reference: sanitizedRef,
+    });
 
-    if (updErr) {
-      console.error('reportCustomerOrderPayment update error:', updErr);
-      return { success: false, error: 'No se pudo guardar el reporte de pago.' };
+    if (!rpcError && rpcData?.success) {
+      reportSaved = true;
+    } else {
+      // 2. Fallback in case RPC is not yet in DB: verified server-side update
+      const nowIso = new Date().toISOString();
+      const { error: updErr } = await supabase
+        .from('zanita_orders')
+        .update({
+          payment_reported_at: order.payment_reported_at || nowIso,
+          payment_reference: sanitizedRef,
+          updated_at: nowIso,
+        })
+        .eq('id', orderId)
+        .eq('user_id', user.id);
+
+      if (updErr) {
+        console.error('reportCustomerOrderPayment update error:', updErr);
+        return { success: false, error: 'No se pudo guardar el reporte de pago.' };
+      }
+      reportSaved = true;
     }
 
-    revalidatePath(`/pedidos/${order.order_number}`);
-    revalidatePath('/mi-cuenta');
-    revalidatePath('/admin');
-    revalidatePath('/admin/pedidos');
+    if (reportSaved) {
+      // Database trigger automatically inserts payment_reported outbox event (Section 1 & 2).
+      // Request immediate background dispatch:
+      try {
+        const { triggerPushDispatch } = await import('@/lib/push/sender');
+        triggerPushDispatch();
+      } catch (pushErr) {
+        console.error('Failed to trigger push dispatch on payment report:', pushErr);
+      }
 
-    return { success: true };
+      revalidatePath(`/pedidos/${order.order_number}`);
+      revalidatePath('/mi-cuenta');
+      revalidatePath('/admin');
+      revalidatePath('/admin/pedidos');
+      return { success: true };
+    }
+
+    return { success: false, error: 'No se pudo registrar el reporte de pago.' };
   } catch (err: unknown) {
     console.error('reportCustomerOrderPayment exception:', err);
     return { success: false, error: 'Error inesperado al reportar el pago.' };
