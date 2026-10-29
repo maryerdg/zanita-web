@@ -67,8 +67,14 @@ export function AdminPushToggle() {
 
     init();
 
+    const handleSubscriptionChange = () => {
+      init();
+    };
+    window.addEventListener('zanita:push-subscription-changed', handleSubscriptionChange);
+
     return () => {
       active = false;
+      window.removeEventListener('zanita:push-subscription-changed', handleSubscriptionChange);
     };
   }, []);
 
@@ -85,6 +91,7 @@ export function AdminPushToggle() {
           await removePushSubscription(sub.endpoint);
         }
         setIsSubscribed(false);
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('zanita:push-subscription-changed'));
         setMessage({ text: 'Alertas desactivadas en este dispositivo.', type: 'success' });
       } else {
         // Subscribe
@@ -149,6 +156,7 @@ export function AdminPushToggle() {
         }
 
         setIsSubscribed(true);
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('zanita:push-subscription-changed'));
         setMessage({
           text: '¡Alertas activadas! Recibirás notificaciones de nuevos pedidos y pagos.',
           type: 'success',

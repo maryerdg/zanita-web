@@ -1,9 +1,46 @@
 // lib/push/client.ts
 // Standards-based client push utilities for Web Push & iOS Standalone detection
 
+import { getVapidPublicKey, savePushSubscription } from '@/app/actions/push';
+
 export interface IosInstallState {
   isIos: boolean;
   isStandalone: boolean;
+}
+
+export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+export const CUSTOMER_PUSH_DISMISS_KEY = 'zanita_customer_push_dismissed_at';
+export const ADMIN_PUSH_DISMISS_KEY = 'zanita_admin_push_dismissed_at';
+
+export function isDismissedRecently(storageKey: string, expiryMs = SEVEN_DAYS_MS): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return false;
+    const timestamp = parseInt(raw, 10);
+    if (isNaN(timestamp)) return false;
+    return Date.now() - timestamp < expiryMs;
+  } catch {
+    return false;
+  }
+}
+
+export function recordDismissal(storageKey: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(storageKey, Date.now().toString());
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+export function clearDismissal(storageKey: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // Ignore
+  }
 }
 
 export function getIosInstallState(): IosInstallState {
@@ -84,4 +121,67 @@ export function getDevicePlatformLabel(): { platform: string; deviceLabel: strin
   }
 
   return { platform, deviceLabel };
+}
+
+export async function subscribeCurrentDevice(): Promise<{
+  success: boolean;
+  error?: string;
+  permission?: NotificationPermission;
+}> {
+  if (!isPushSupported()) {
+    return { success: false, error: 'Tu navegador no soporta notificaciones push.' };
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    return {
+      success: false,
+      permission,
+      error: 'Permiso denegado. Puedes habilitar las notificaciones en los ajustes de tu navegador.',
+    };
+  }
+
+  const vapidPublicKey = await getVapidPublicKey();
+  if (!vapidPublicKey) {
+    return { success: false, permission, error: 'VAPID public key no configurada.' };
+  }
+
+  const reg = await registerPushServiceWorker();
+  if (!reg) {
+    return { success: false, permission, error: 'No se pudo registrar el Service Worker.' };
+  }
+
+  const readyReg = await navigator.serviceWorker.ready;
+  const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+  let sub = await readyReg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await readyReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedKey.buffer as ArrayBuffer,
+    });
+  }
+
+  const p256dh = sub.getKey('p256dh')
+    ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('p256dh')!))))
+    : '';
+  const auth = sub.getKey('auth')
+    ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('auth')!))))
+    : '';
+
+  const { platform, deviceLabel } = getDevicePlatformLabel();
+
+  const res = await savePushSubscription({
+    endpoint: sub.endpoint,
+    p256dh,
+    auth,
+    platform,
+    deviceLabel,
+  });
+
+  if (res.success && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('zanita:push-subscription-changed'));
+  }
+
+  return { success: res.success, error: res.error, permission };
 }

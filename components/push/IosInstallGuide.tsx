@@ -3,15 +3,23 @@
 import React from 'react';
 
 interface IosInstallGuideProps {
+  title?: string;
+  step5Text?: string;
   onDismiss?: () => void;
+  dismissText?: string;
 }
 
-export function IosInstallGuide({ onDismiss }: IosInstallGuideProps) {
+export function IosInstallGuide({
+  title = 'Activa las notificaciones en iPhone o iPad',
+  step5Text = 'Activa las notificaciones',
+  onDismiss,
+  dismissText,
+}: IosInstallGuideProps) {
   return (
     <div className="bg-[#FAF7F2] border border-[#EBE3D7] rounded-2xl p-5 text-[#261C19] space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-2.5">
-          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#E57A3B]/10 text-[#E57A3B]">
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#A73832]/10 text-[#A73832]">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -22,7 +30,7 @@ export function IosInstallGuide({ onDismiss }: IosInstallGuideProps) {
             </svg>
           </span>
           <h4 className="font-serif font-semibold text-base text-[#261C19]">
-            Activa las notificaciones en iPhone o iPad
+            {title}
           </h4>
         </div>
         {onDismiss && (
@@ -46,7 +54,7 @@ export function IosInstallGuide({ onDismiss }: IosInstallGuideProps) {
           Abre <strong>Zanita en Safari</strong>.
         </li>
         <li>
-          Toca el botón <strong>Compartir</strong> <span className="inline-block text-[#E57A3B]">⎋</span> (ícono de cuadro con flecha).
+          Toca el botón <strong>Compartir</strong> <span className="inline-block text-[#A73832]">⎋</span> (ícono de cuadro con flecha).
         </li>
         <li>
           Selecciona <strong>&ldquo;Agregar a pantalla de inicio&rdquo;</strong>.
@@ -55,9 +63,21 @@ export function IosInstallGuide({ onDismiss }: IosInstallGuideProps) {
           Abre Zanita desde su <strong>ícono en tu pantalla de inicio</strong>.
         </li>
         <li>
-          Toca <strong>&ldquo;Activar notificaciones&rdquo;</strong> para recibir alertas de tus pedidos.
+          <strong>{step5Text}</strong>.
         </li>
       </ol>
+
+      {onDismiss && dismissText && (
+        <div className="pt-1 text-right">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#A73832] text-white hover:bg-[#8e2e28] transition-colors"
+          >
+            {dismissText}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

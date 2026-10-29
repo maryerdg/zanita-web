@@ -67,8 +67,14 @@ export function CustomerPushToggle() {
 
     init();
 
+    const handleSubscriptionChange = () => {
+      init();
+    };
+    window.addEventListener('zanita:push-subscription-changed', handleSubscriptionChange);
+
     return () => {
       active = false;
+      window.removeEventListener('zanita:push-subscription-changed', handleSubscriptionChange);
     };
   }, []);
 
@@ -85,6 +91,7 @@ export function CustomerPushToggle() {
           await removePushSubscription(sub.endpoint);
         }
         setIsSubscribed(false);
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('zanita:push-subscription-changed'));
         setMessage({ text: 'Notificaciones desactivadas en este dispositivo.', type: 'success' });
       } else {
         // Subscribe
@@ -147,6 +154,7 @@ export function CustomerPushToggle() {
         }
 
         setIsSubscribed(true);
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('zanita:push-subscription-changed'));
         setMessage({
           text: '¡Listo! Te avisaremos de cualquier actualización de tus pedidos.',
           type: 'success',

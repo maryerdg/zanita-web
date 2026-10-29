@@ -15,6 +15,7 @@ import {
 import { getCustomerStatusMeta } from '@/lib/orders/customer-status';
 import { derivePaymentStatus } from '@/lib/orders/payment-status';
 import { CustomerPushToggle } from '@/components/push/CustomerPushToggle';
+import { CustomerPushOnboardingModal } from '@/components/push/CustomerPushOnboardingModal';
 
 export interface CustomerOrderListItem {
   id: string;
@@ -339,6 +340,7 @@ export default function MiCuentaClient({
 
           {/* Customer Push Notifications */}
           <CustomerPushToggle />
+          <CustomerPushOnboardingModal />
         </div>
       </div>
     </div>

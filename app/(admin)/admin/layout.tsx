@@ -2,6 +2,7 @@ import { createClient } from '@/app/actions/supabase-server'
 import { redirect } from 'next/navigation'
 import AdminNav from './AdminNav'
 import { AdminOrdersRealtimeProvider } from './AdminOrdersRealtime'
+import { AdminPushOnboardingPrompt } from '@/components/push/AdminPushOnboardingPrompt'
 
 export default async function AdminLayout({
   children,
@@ -35,6 +36,7 @@ export default async function AdminLayout({
             {children}
           </div>
         </main>
+        <AdminPushOnboardingPrompt />
       </div>
     </AdminOrdersRealtimeProvider>
   )

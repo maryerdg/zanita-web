@@ -356,12 +356,16 @@ async function runTests() {
     password: 'Cliente123!',
   });
 
-  const targetDate = new Date();
+  const nowTijuana = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Tijuana' }));
+  const targetDate = new Date(nowTijuana);
   targetDate.setDate(targetDate.getDate() + 2);
   while (targetDate.getDay() === 0 || targetDate.getDay() === 6) {
     targetDate.setDate(targetDate.getDate() + 1);
   }
-  const futureDateStr = targetDate.toISOString().split('T')[0];
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  const futureDateStr = `${year}-${month}-${day}`;
 
   const idempotencyKey = crypto.randomUUID();
   const checkoutPayload = {
