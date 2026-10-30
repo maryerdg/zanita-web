@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Instagram, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 const storyParagraphs = [
   'Zanita nació de algo muy simple: las ganas de encontrar un snack que se sintiera rico, fresco y diferente.',
@@ -48,7 +48,7 @@ export default function NosotrosPage() {
                 rel="noreferrer"
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#A73832] bg-white/70 px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#A73832] transition-colors hover:bg-white"
               >
-                <Instagram className="h-4 w-4" />
+                <span className="text-base leading-none">@</span>
                 @zanita.tj
               </a>
             </div>
@@ -138,7 +138,7 @@ export default function NosotrosPage() {
                   rel="noreferrer"
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#E4D5C1] px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#A73832] transition-colors hover:bg-[#FFF9F2]"
                 >
-                  <Instagram className="h-4 w-4" />
+                  <span className="text-base leading-none">@</span>
                   Síguenos en Instagram
                 </a>
               </div>
