@@ -36,7 +36,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, photoSrc }) =
               Agotado
             </span>
           </div>
-        )
+        )}
 
         {/* Media Content: Split Image OR Real Photo OR Direct Centered "FOTO AQUÍ" Text */}
         {presentation.isSplitImage ? (
