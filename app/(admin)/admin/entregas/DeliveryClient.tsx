@@ -550,9 +550,17 @@ export default function DeliveryClient({
             )}
           </div>
 
-          {!isKitchenConfigured && (
-            <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
-              ⚠️ Al no tener coordenadas base, todos los envíos a domicilio se mostrarán como «Por cotizar» en el checkout.
+          {Boolean(kitchenLat.trim() && kitchenLng.trim()) && (!isKitchenConfigured || kitchen.latitude?.toString() !== kitchenLat.trim() || kitchen.longitude?.toString() !== kitchenLng.trim()) ? (
+            <p className="text-xs text-[#6E564F] bg-[#FAF7F2] p-3 rounded-xl border border-[#E8DCC4] flex items-center">
+              ℹ️ Guarda esta ubicación para usarla como ubicación base.
+            </p>
+          ) : isKitchenConfigured && kitchen.latitude?.toString() === kitchenLat.trim() && kitchen.longitude?.toString() === kitchenLng.trim() ? (
+            <p className="text-xs text-emerald-800 bg-emerald-50 p-3 rounded-xl border border-emerald-200 flex items-center">
+              ✓ Ubicación base guardada ({kitchen.label}).
+            </p>
+          ) : (
+            <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-center">
+              ⚠️ Sin ubicación base configurada. Todos los envíos a domicilio se mostrarán como «Por cotizar» en el checkout.
             </p>
           )}
         </form>
