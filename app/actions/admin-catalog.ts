@@ -162,7 +162,12 @@ export async function getAdminCatalogData(): Promise<{ data?: AdminCatalogData; 
     return { error: 'No se pudo cargar el catálogo administrativo.' }
   }
 
-  const products: AdminCatalogProduct[] = (productRes.data || []).map((row: Record<string, unknown>) => {
+  const productRows = (productRes.data || []) as unknown as Record<string, unknown>[]
+  const optionRows = (optionRes.data || []) as unknown as Record<string, unknown>[]
+  const groupRows = (groupRes.data || []) as unknown as Record<string, unknown>[]
+  const assignmentRows = (assignmentRes.data || []) as unknown as Record<string, unknown>[]
+
+  const products: AdminCatalogProduct[] = productRows.map((row) => {
     const status = (schemaReady
       ? String(row.status || (row.is_active ? 'published' : 'hidden'))
       : row.is_active
@@ -190,7 +195,7 @@ export async function getAdminCatalogData(): Promise<{ data?: AdminCatalogData; 
     }
   })
 
-  const options: AdminCatalogOption[] = (optionRes.data || []).map((row: Record<string, unknown>) => {
+  const options: AdminCatalogOption[] = optionRows.map((row) => {
     const status = (schemaReady
       ? String(row.status || (row.is_active ? 'published' : 'hidden'))
       : row.is_active
@@ -213,7 +218,7 @@ export async function getAdminCatalogData(): Promise<{ data?: AdminCatalogData; 
     }
   })
 
-  const groups: AdminCatalogGroup[] = (groupRes.data || []).map((row: Record<string, unknown>) => ({
+  const groups: AdminCatalogGroup[] = groupRows.map((row) => ({
     id: String(row.id),
     name: String(row.name),
     description: (row.description as string | null) ?? null,
@@ -221,7 +226,7 @@ export async function getAdminCatalogData(): Promise<{ data?: AdminCatalogData; 
     options: options.filter((option) => option.groupId === String(row.id)),
   }))
 
-  const assignments: AdminProductGroupAssignment[] = (assignmentRes.data || []).map((row: Record<string, unknown>) => ({
+  const assignments: AdminProductGroupAssignment[] = assignmentRows.map((row) => ({
     productId: String(row.product_id),
     groupId: String(row.group_id),
     isRequired: Boolean(row.is_required),
