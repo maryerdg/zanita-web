@@ -19,7 +19,7 @@ export const Navbar: React.FC<{ isLoggedIn?: boolean, userRole?: string | null }
   const navLinks = [
     { name: 'Inicio', href: '/' },
     { name: 'Catálogo de Productos', href: '/productos' },
-    { name: 'Nuestra Historia', href: '/nosotros' },
+    { name: 'Sobre Zanita', href: '/nosotros' },
     { name: 'Zonas & Entregas', href: '/puntos-de-entrega' },
   ];
 
