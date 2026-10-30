@@ -895,7 +895,9 @@ function SimpleAddToCart({ product }: { product: CatalogProduct }) {
           }`}
           aria-label={`Agregar ${product.name} al carrito`}
         >
-          {justAdded ? (
+          {!product.isAvailable ? (
+            <span>Agotado por ahora</span>
+          ) : justAdded ? (
             <>
               <Check className="w-4.5 h-4.5" />
               <span>¡Agregado al carrito!</span>
@@ -908,6 +910,12 @@ function SimpleAddToCart({ product }: { product: CatalogProduct }) {
           )}
         </button>
       </div>
+
+      {!product.isAvailable && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center text-xs font-semibold text-amber-900">
+          Este producto está agotado por el momento.
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#E4D5C1]">
         <Link href="/carrito" className="text-sm font-bold text-[#A73832] hover:underline">
