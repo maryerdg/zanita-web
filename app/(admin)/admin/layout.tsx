@@ -31,7 +31,7 @@ export default async function AdminLayout({
     <AdminOrdersRealtimeProvider>
       <div className="min-h-[calc(100vh-64px)] bg-[#FAF7F2] text-[#261C19] flex flex-col md:flex-row font-sans">
         <AdminNav userEmail={user.email || 'Admin'} />
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 p-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-6 lg:p-8 lg:pb-8">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
