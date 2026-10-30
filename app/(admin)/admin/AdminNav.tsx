@@ -9,6 +9,8 @@ import {
   Truck,
   Users,
   ShoppingBag,
+  Package,
+  Menu,
   ExternalLink,
   Settings,
   Bell,
@@ -22,6 +24,7 @@ import { useAdminRealtime } from './AdminOrdersRealtime'
 const NAV_ITEMS = [
   { href: '/admin', label: 'Resumen', icon: LayoutDashboard, exact: true },
   { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag, exact: false },
+  { href: '/admin/catalogo', label: 'Catálogo', icon: Package, exact: false },
   { href: '/admin/disponibilidad', label: 'Disponibilidad', icon: Clock, exact: false },
   { href: '/admin/entregas', label: 'Entregas', icon: Truck, exact: false },
   { href: '/admin/usuarios', label: 'Usuarios', icon: Users, exact: false },
@@ -257,27 +260,35 @@ export default function AdminNav({ userEmail }: { userEmail: string }) {
           {showNotifications && renderNotificationPopover()}
         </div>
 
-        <nav className="flex items-center gap-1.5 p-2 overflow-x-auto no-scrollbar" aria-label="Navegación Admin Móvil">
-          {NAV_ITEMS.map((item) => {
+      </div>
+
+      {/* Persistent mobile bottom navigation */}
+      <nav
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-[#E8DCC4] bg-white/95 backdrop-blur-md px-2 pt-2 pb-[max(0.55rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(38,28,25,0.08)]"
+        aria-label="Navegación principal del Admin"
+      >
+        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+          {MOBILE_BOTTOM_ITEMS.map((item) => {
             const Icon = item.icon
             const active = isActive(item)
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors ${
                   active
-                    ? 'bg-[#A73832] text-white shadow-2xs'
+                    ? 'bg-[#A73832] text-white'
                     : 'text-[#6E564F] hover:bg-[#FAF7F2] hover:text-[#261C19]'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : 'text-[#6E564F]'}`} />
+                <Icon className="h-4 w-4 shrink-0" />
                 <span>{item.label}</span>
               </Link>
             )
           })}
-        </nav>
-      </div>
+        </div>
+      </nav>
 
       {/* Desktop / Tablet Sidebar (>= md) */}
       <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-white border-r border-[#E8DCC4] shrink-0 self-stretch relative">
