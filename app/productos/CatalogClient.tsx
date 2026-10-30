@@ -10,18 +10,23 @@ import { Filter, Sparkles } from 'lucide-react';
 export default function CatalogClient({ initialProducts }: { initialProducts: CatalogProduct[] }) {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
 
-  const categories = [
-    { id: 'todos', name: 'Todos los Productos' },
-    { id: 'manzanas', name: 'Manzanas Preparadas' },
-    { id: 'combos', name: 'Combos & Paquetes' },
-    { id: 'charolas', name: 'Charolas Preparadas' },
-    { id: 'snacks', name: 'Snacks & Mixes' },
-    { id: 'uvas', name: 'Uvas Preparadas' },
-  ];
-
   const catalogProducts = useMemo(() => {
     return getDisplayCatalogProducts(initialProducts);
   }, [initialProducts]);
+
+  const categories = useMemo(() => {
+    const unique = new Map<string, string>();
+    for (const product of catalogProducts) {
+      if (!unique.has(product.category)) {
+        unique.set(product.category, product.categoryLabel);
+      }
+    }
+
+    return [
+      { id: 'todos', name: 'Todos los Productos' },
+      ...Array.from(unique, ([id, name]) => ({ id, name })),
+    ];
+  }, [catalogProducts]);
 
   const filteredProducts = useMemo(() => {
     return catalogProducts.filter((product) => {
