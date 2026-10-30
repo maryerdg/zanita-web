@@ -31,6 +31,14 @@ const NAV_ITEMS = [
   { href: '/admin/ajustes', label: 'Ajustes', icon: Settings, exact: false },
 ]
 
+const MOBILE_BOTTOM_ITEMS = [
+  { href: '/admin', label: 'Resumen', icon: LayoutDashboard, exact: true },
+  { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag, exact: false },
+  { href: '/admin/catalogo', label: 'Catálogo', icon: Package, exact: false },
+  { href: '/admin/disponibilidad', label: 'Horarios', icon: Clock, exact: false },
+  { href: '/admin/ajustes', label: 'Más', icon: Menu, exact: false },
+]
+
 export default function AdminNav({ userEmail }: { userEmail: string }) {
   const pathname = usePathname()
   const router = useRouter()
