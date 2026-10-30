@@ -845,10 +845,10 @@ export default function AvailabilityClient({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif font-bold text-[#261C19]">
-            Gestión de Disponibilidad
+            Horarios y disponibilidad
           </h1>
           <p className="text-sm text-[#6E564F] mt-1">
-            Configura los días, horas, intervalos de entrega y excepciones para el checkout de Zanita.
+            Define cuándo puede pedir la gente, dónde entregas y qué días necesitas bloquear.
           </p>
         </div>
 
@@ -869,49 +869,56 @@ export default function AvailabilityClient({
         </div>
       </div>
 
-      {/* OPERATIONAL SETTING: TRANSITION BUFFER BETWEEN OFFICIAL ZONES */}
-      <div className="bg-white rounded-2xl border border-[#E8DCC4] shadow-xs p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-serif font-bold text-[#261C19] flex items-center">
-            <Clock className="w-4 h-4 mr-2 text-[#A73832]" />
-            Tiempo mínimo entre entregas en zonas distintas (Buffer de Transición)
-          </h2>
-          <p className="text-xs text-[#6E564F] mt-0.5">
-            Margen de traslado requerido entre pedidos de zonas oficiales diferentes (ej. Ermita vs Hipódromo).
-          </p>
+      <details className="rounded-2xl border border-[#E8DCC4] bg-white shadow-xs">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-bold text-[#6E564F]">
+          <span>Ajuste avanzado: tiempo entre entregas de zonas distintas</span>
+          <ChevronRight className="h-4 w-4" />
+        </summary>
+        <div className="border-t border-[#F2ECE1] p-4 sm:p-5">
+        <div className="bg-white rounded-2xl border border-[#E8DCC4] shadow-xs p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-serif font-bold text-[#261C19] flex items-center">
+              <Clock className="w-4 h-4 mr-2 text-[#A73832]" />
+              Tiempo mínimo entre entregas en zonas distintas (Buffer de Transición)
+            </h2>
+            <p className="text-xs text-[#6E564F] mt-0.5">
+              Margen de traslado requerido entre pedidos de zonas oficiales diferentes (ej. Ermita vs Hipódromo).
+            </p>
+          </div>
+  
+          <div className="flex items-center space-x-2 shrink-0">
+            <input
+              type="number"
+              min="0"
+              max="180"
+              step="5"
+              value={bufferMinutes}
+              onChange={(e) => setBufferMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+              className="w-20 text-xs bg-[#FAF7F2] border border-[#E8DCC4] rounded-lg px-2.5 py-1.5 text-[#261C19] font-semibold text-center"
+              aria-label="Minutos de buffer entre zonas distintas"
+            />
+            <span className="text-xs text-[#6E564F]">minutos</span>
+            <button
+              type="button"
+              disabled={savingBuffer}
+              onClick={async () => {
+                setSavingBuffer(true)
+                const res = await saveCrossZoneTransitionBuffer(bufferMinutes)
+                setSavingBuffer(false)
+                if (res.error) {
+                  showNotification('error', res.error)
+                } else {
+                  showNotification('success', res.message || 'Configuración guardada')
+                }
+              }}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#261C19] text-white hover:bg-[#A73832] transition-colors shadow-xs cursor-pointer"
+            >
+              {savingBuffer ? 'Guardando...' : 'Actualizar'}
+            </button>
+          </div>
         </div>
-
-        <div className="flex items-center space-x-2 shrink-0">
-          <input
-            type="number"
-            min="0"
-            max="180"
-            step="5"
-            value={bufferMinutes}
-            onChange={(e) => setBufferMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
-            className="w-20 text-xs bg-[#FAF7F2] border border-[#E8DCC4] rounded-lg px-2.5 py-1.5 text-[#261C19] font-semibold text-center"
-            aria-label="Minutos de buffer entre zonas distintas"
-          />
-          <span className="text-xs text-[#6E564F]">minutos</span>
-          <button
-            type="button"
-            disabled={savingBuffer}
-            onClick={async () => {
-              setSavingBuffer(true)
-              const res = await saveCrossZoneTransitionBuffer(bufferMinutes)
-              setSavingBuffer(false)
-              if (res.error) {
-                showNotification('error', res.error)
-              } else {
-                showNotification('success', res.message || 'Configuración guardada')
-              }
-            }}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#261C19] text-white hover:bg-[#A73832] transition-colors shadow-xs cursor-pointer"
-          >
-            {savingBuffer ? 'Guardando...' : 'Actualizar'}
-          </button>
         </div>
-      </div>
+      </details>
 
       {/* SECTION A: HORARIO HABITUAL (WEEKLY SCHEDULE) */}
       <div className="bg-white rounded-2xl border border-[#E8DCC4] shadow-xs p-6 md:p-8 space-y-6">
