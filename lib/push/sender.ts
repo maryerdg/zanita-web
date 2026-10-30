@@ -209,34 +209,50 @@ async function executeEventDispatch(event: ZanitaNotificationEvent): Promise<voi
 
   if (event.recipient_scope === 'admin') {
     // Canonical admin resolution: find all admin profile IDs (public.profiles.role = 'admin')
-    const { data: adminProfiles } = await supabase
+    const { data: adminProfiles, error: adminProfilesError } = await supabase
       .from('profiles')
       .select('id')
       .eq('role', 'admin');
 
+    if (adminProfilesError) {
+      throw new Error(`ADMIN_PROFILE_LOOKUP_FAILED:${adminProfilesError.message}`);
+    }
+
     const adminUserIds = (adminProfiles || []).map((p: { id: string }) => p.id);
 
     if (adminUserIds.length > 0) {
-      const { data: adminSubs } = await supabase
+      const { data: adminSubs, error: adminSubsError } = await supabase
         .from('zanita_push_subscriptions')
         .select('id, user_id, endpoint, p256dh, auth')
         .in('user_id', adminUserIds)
         .is('disabled_at', null);
 
+      if (adminSubsError) {
+        throw new Error(`ADMIN_SUBSCRIPTION_LOOKUP_FAILED:${adminSubsError.message}`);
+      }
+
       subscriptions = adminSubs || [];
     }
   } else if (event.recipient_scope === 'customer' && event.recipient_user_id) {
-    const { data: customerSubs } = await supabase
+    const { data: customerSubs, error: customerSubsError } = await supabase
       .from('zanita_push_subscriptions')
       .select('id, user_id, endpoint, p256dh, auth')
       .eq('user_id', event.recipient_user_id)
       .is('disabled_at', null);
+
+    if (customerSubsError) {
+      throw new Error(`CUSTOMER_SUBSCRIPTION_LOOKUP_FAILED:${customerSubsError.message}`);
+    }
 
     subscriptions = customerSubs || [];
   }
 
   // 2. Handle zero subscribers safely
   if (subscriptions.length === 0) {
+    console.warn(
+      `[WebPush] No active subscriptions for ${event.recipient_scope} event ${event.event_key}`
+    );
+
     await supabase
       .from('zanita_notification_events')
       .update({
@@ -350,6 +366,10 @@ async function executeEventDispatch(event: ZanitaNotificationEvent): Promise<voi
   } else {
     finalStatus = 'failed';
   }
+
+  console.info(
+    `[WebPush] Dispatch result ${event.event_key}: ${finalStatus} (${sentSuccessCount} sent, ${sentFailureCount} failed)`
+  );
 
   await supabase
     .from('zanita_notification_events')
