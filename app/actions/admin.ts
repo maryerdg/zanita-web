@@ -449,6 +449,86 @@ export async function saveWeeklyRule(rule: {
   return { success: true, message: 'Horario guardado correctamente' }
 }
 
+
+export type WeeklyScheduleBatchInput = {
+  delivery_mode: 'official_point' | 'home_delivery' | 'cetys_pickup'
+  delivery_point_ids?: string[]
+  days: number[]
+  schedule_type: 'interval' | 'fixed_times'
+  open_time?: string | null
+  close_time?: string | null
+  slot_interval_minutes?: number | null
+  min_lead_minutes: number
+  submission_cutoff_time?: string | null
+  fixed_slots?: string[]
+}
+
+export async function saveWeeklyScheduleBatch(input: WeeklyScheduleBatchInput) {
+  const auth = await verifyAdminCaller()
+  if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
+
+  const days = Array.from(new Set(input.days)).sort((a, b) => a - b)
+
+  if (days.length === 0 || days.some((day) => day < 1 || day > 7)) {
+    return { error: 'Selecciona al menos un día válido.' }
+  }
+
+  if (input.min_lead_minutes < 0) {
+    return { error: 'La anticipación mínima no puede ser negativa.' }
+  }
+
+  if (input.schedule_type === 'interval') {
+    if (!input.open_time || !input.close_time || input.open_time >= input.close_time) {
+      return { error: 'Selecciona una hora de inicio y fin válidas.' }
+    }
+
+    if (![15, 30, 45, 60].includes(Number(input.slot_interval_minutes))) {
+      return { error: 'Selecciona un intervalo de 15, 30, 45 o 60 minutos.' }
+    }
+  } else {
+    const fixedSlots = Array.from(new Set((input.fixed_slots || []).filter(Boolean))).sort()
+    if (fixedSlots.length === 0) {
+      return { error: 'Agrega al menos una hora específica.' }
+    }
+  }
+
+  const { data, error } = await auth.supabase.rpc('save_zanita_weekly_schedule_batch', {
+    p_delivery_mode: input.delivery_mode,
+    p_delivery_point_ids:
+      input.delivery_mode === 'official_point' && (input.delivery_point_ids || []).length > 0
+        ? input.delivery_point_ids
+        : null,
+    p_days: days,
+    p_schedule_type: input.schedule_type,
+    p_open_time: input.schedule_type === 'interval' ? input.open_time || null : null,
+    p_close_time: input.schedule_type === 'interval' ? input.close_time || null : null,
+    p_slot_interval_minutes:
+      input.schedule_type === 'interval' ? Number(input.slot_interval_minutes) : null,
+    p_min_lead_minutes: input.min_lead_minutes,
+    p_submission_cutoff_time: input.submission_cutoff_time || null,
+    p_fixed_slots:
+      input.schedule_type === 'fixed_times'
+        ? Array.from(new Set((input.fixed_slots || []).filter(Boolean))).sort()
+        : null,
+  })
+
+  if (error) {
+    console.error('Error saving weekly schedule batch:', error)
+    return { error: `No se pudo guardar el horario: ${error.message}` }
+  }
+
+  revalidatePath('/admin/disponibilidad')
+  revalidatePath('/admin')
+  revalidatePath('/checkout')
+
+  const result = (data || {}) as { saved_rules?: number }
+  return {
+    success: true,
+    savedRules: result.saved_rules || days.length,
+    message: 'Horario guardado correctamente.',
+  }
+}
+
 export async function deleteWeeklyRule(ruleId: string) {
   const auth = await verifyAdminCaller()
   if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
