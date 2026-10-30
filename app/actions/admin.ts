@@ -1230,39 +1230,67 @@ export async function deleteDeliverySurcharge(surchargeId: string) {
 // 9. USERS DIRECTORY & CETYS PICKUP TOGGLE
 // ============================================================================
 
-export type CustomerProfileRow = {
+export type AdminUserProfileRow = {
   id: string
   full_name: string | null
   email: string | null
   phone: string | null
   cetys_pickup_enabled: boolean
-  role: string
+  role: 'admin' | 'customer' | string
   created_at: string
 }
 
-export async function getCustomersList(searchQuery?: string) {
+export type UserRoleFilter = 'all' | 'customer' | 'admin'
+
+export async function getUsersList(
+  searchQuery?: string,
+  roleFilter: UserRoleFilter = 'all'
+) {
   const auth = await verifyAdminCaller()
   if (auth.error || !auth.supabase) return { error: auth.error || 'Error de autenticación' }
 
   let query = auth.supabase
     .from('profiles')
     .select('id, full_name, email, phone, cetys_pickup_enabled, role, created_at')
-    .eq('role', 'customer')
     .order('created_at', { ascending: false })
 
+  if (roleFilter === 'customer' || roleFilter === 'admin') {
+    query = query.eq('role', roleFilter)
+  }
+
   if (searchQuery && searchQuery.trim().length > 0) {
-    const q = `%${searchQuery.trim()}%`
+    const sanitized = searchQuery.trim().replace(/[%(),]/g, ' ')
+    const q = `%${sanitized}%`
     query = query.or(`full_name.ilike.${q},email.ilike.${q},phone.ilike.${q}`)
   }
 
   const { data, error } = await query
 
   if (error) {
-    console.error('Error loading customers:', error)
-    return { error: 'Error al consultar clientes' }
+    console.error('Error loading users:', error)
+    return { error: 'Error al consultar usuarios' }
   }
 
-  return { customers: data as CustomerProfileRow[] }
+  const users = (data || []) as AdminUserProfileRow[]
+
+  return {
+    users,
+    counts: {
+      all: users.length,
+      customers: users.filter((user) => user.role === 'customer').length,
+      admins: users.filter((user) => user.role === 'admin').length,
+    },
+  }
+}
+
+// Temporary compatibility alias for older imports.
+export type CustomerProfileRow = AdminUserProfileRow
+export async function getCustomersList(searchQuery?: string) {
+  const result = await getUsersList(searchQuery, 'customer')
+  return {
+    customers: result.users || [],
+    error: result.error,
+  }
 }
 
 export async function toggleCetysPickup(userId: string, enabled: boolean) {
