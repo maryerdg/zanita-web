@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getAdminReadinessSummary } from '@/app/actions/admin';
 import { getAdminTodayOperationSummary } from '@/app/actions/admin-orders';
+import { getAdminCatalogData } from '@/app/actions/admin-catalog';
+import QuickAvailabilitySheet from '@/components/admin/QuickAvailabilitySheet';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -19,9 +21,10 @@ import { formatDateLong } from '@/lib/time/tijuana';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
-  const [readinessRes, todayRes] = await Promise.all([
+  const [readinessRes, todayRes, catalogRes] = await Promise.all([
     getAdminReadinessSummary(),
     getAdminTodayOperationSummary(),
+    getAdminCatalogData(),
   ]);
 
   const { summary: readiness, error: readinessErr } = readinessRes;
@@ -49,6 +52,22 @@ export default async function AdminDashboardPage() {
           Operación de hoy, cola de producción y estado de disponibilidad en tiempo real.
         </p>
       </div>
+
+      {catalogRes.data && (
+        <section className="flex flex-col gap-2 rounded-2xl border border-[#E8DCC4] bg-[#FFF9F2] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-serif text-lg font-bold text-[#261C19]">Acciones rápidas</h2>
+            <p className="text-xs text-[#6E564F]">Resuelve cambios de disponibilidad sin entrar a editar todo el catálogo.</p>
+          </div>
+          <QuickAvailabilitySheet
+            data={{
+              products: catalogRes.data.products,
+              groups: catalogRes.data.groups,
+              schemaReady: catalogRes.data.schemaReady,
+            }}
+          />
+        </section>
+      )}
 
       {/* 1. HERO SECTION: TODAY'S OPERATION */}
       <section className="space-y-4">
