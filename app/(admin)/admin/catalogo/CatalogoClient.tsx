@@ -448,7 +448,7 @@ export default function CatalogoClient({ initialData }: { initialData: AdminCata
         {[
           { id: 'products' as Tab, label: 'Productos', icon: Package },
           { id: 'ingredients' as Tab, label: 'Ingredientes', icon: Utensils },
-          { id: 'groups' as Tab, label: 'Grupos', icon: ChevronDown },
+          { id: 'groups' as Tab, label: 'Personalizaciones', icon: ChevronDown },
         ].map((item) => {
           const Icon = item.icon
           return (
@@ -701,7 +701,7 @@ export default function CatalogoClient({ initialData }: { initialData: AdminCata
               className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#A73832] px-4 text-sm font-bold text-white disabled:opacity-40"
             >
               <Plus className="h-4 w-4" />
-              Nuevo grupo
+              Nueva personalización
             </button>
           </div>
 
@@ -884,7 +884,7 @@ export default function CatalogoClient({ initialData }: { initialData: AdminCata
             <div className="space-y-3 rounded-2xl border border-[#E8DCC4] bg-white p-4">
               <div>
                 <h3 className="font-serif text-lg font-bold">Personalización</h3>
-                <p className="text-xs text-[#6E564F]">Asigna frutas, toppings u otros grupos a este producto.</p>
+                <p className="text-xs text-[#6E564F]">Asigna frutas, toppings u otras personalizaciones a este producto.</p>
               </div>
 
               {initialData.groups.filter((group) => group.isActive).map((group) => {
@@ -1134,7 +1134,7 @@ export default function CatalogoClient({ initialData }: { initialData: AdminCata
       )}
 
       {groupDraft && (
-        <Modal title={groupDraft.id ? 'Editar grupo' : 'Nuevo grupo'} onClose={() => setGroupDraft(null)}>
+        <Modal title={groupDraft.id ? 'Editar personalización' : 'Nueva personalización'} onClose={() => setGroupDraft(null)}>
           <div className="space-y-4">
             <label className="block space-y-1.5">
               <span className="text-xs font-bold text-[#6E564F]">Nombre *</span>
@@ -1160,7 +1160,7 @@ export default function CatalogoClient({ initialData }: { initialData: AdminCata
                 checked={groupDraft.isActive}
                 onChange={(event) => setGroupDraft({ ...groupDraft, isActive: event.target.checked })}
               />
-              Grupo activo
+              Personalización activa
             </label>
             <button
               type="button"
@@ -1169,7 +1169,7 @@ export default function CatalogoClient({ initialData }: { initialData: AdminCata
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#A73832] px-5 text-sm font-bold text-white disabled:opacity-40"
             >
               <Save className="h-4 w-4" />
-              Guardar grupo
+              Guardar personalización
             </button>
           </div>
         </Modal>
