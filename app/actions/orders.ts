@@ -45,7 +45,7 @@ export async function submitCheckoutOrder(payload: SubmitOrderPayload): Promise<
       // Request immediate background dispatch:
       try {
         const { triggerPushDispatch } = await import('@/lib/push/sender');
-        triggerPushDispatch({ eventKey: `new_order:${result.orderId}` });
+        await triggerPushDispatch({ eventKey: `new_order:${result.orderId}` });
       } catch (pushErr) {
         console.error('Failed to trigger push dispatch:', pushErr);
       }
@@ -221,7 +221,7 @@ export async function reportCustomerOrderPayment(
       // Request immediate background dispatch:
       try {
         const { triggerPushDispatch } = await import('@/lib/push/sender');
-        triggerPushDispatch();
+        await triggerPushDispatch();
       } catch (pushErr) {
         console.error('Failed to trigger push dispatch on payment report:', pushErr);
       }
