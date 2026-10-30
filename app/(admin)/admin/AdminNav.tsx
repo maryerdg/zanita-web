@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Resumen', icon: LayoutDashboard, exact: true },
   { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag, exact: false },
   { href: '/admin/catalogo', label: 'Catálogo', icon: Package, exact: false },
-  { href: '/admin/disponibilidad', label: 'Disponibilidad', icon: Clock, exact: false },
+  { href: '/admin/disponibilidad', label: 'Horarios', icon: Clock, exact: false },
   { href: '/admin/entregas', label: 'Entregas', icon: Truck, exact: false },
   { href: '/admin/usuarios', label: 'Usuarios', icon: Users, exact: false },
   { href: '/admin/ajustes', label: 'Ajustes', icon: Settings, exact: false },
