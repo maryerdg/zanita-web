@@ -30,6 +30,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, photoSrc }) =
           </span>
         </div>
 
+        {!product.isAvailable && (
+          <div className="absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-10">
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-600 text-white shadow-xs">
+              Agotado
+            </span>
+          </div>
+        )
+
         {/* Media Content: Split Image OR Real Photo OR Direct Centered "FOTO AQUÍ" Text */}
         {presentation.isSplitImage ? (
           <ComboSplitImage />
@@ -73,7 +81,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, photoSrc }) =
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Link
               href={presentation.href}
-              className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 lg:py-2 min-h-[32px] sm:min-h-[36px] lg:min-h-[40px] text-[9px] sm:text-[10px] lg:text-xs font-bold uppercase tracking-wide sm:tracking-wider rounded-md bg-[#A73832] text-white hover:bg-[#8e2e28] transition-colors w-full justify-center"
+              className={`inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 lg:py-2 min-h-[32px] sm:min-h-[36px] lg:min-h-[40px] text-[9px] sm:text-[10px] lg:text-xs font-bold uppercase tracking-wide sm:tracking-wider rounded-md text-white transition-colors w-full justify-center ${
+                product.isAvailable ? 'bg-[#A73832] hover:bg-[#8e2e28]' : 'bg-[#6E564F]'
+              }`}
               aria-label={`Ver ${presentation.title}`}
             >
               <span>Ver</span>
