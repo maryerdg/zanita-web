@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useTransition, useId } from 'react'
+import WeeklyScheduleBatchComposer from '@/components/admin/WeeklyScheduleBatchComposer'
 import {
   saveWeeklyRule,
   deleteWeeklyRule,
@@ -924,107 +925,123 @@ export default function AvailabilityClient({
           </p>
         </div>
 
-        {/* Mode Selector Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-[#F2ECE1] pb-4">
-          <button
-            onClick={() => {
-              setSelectedMode('official_point')
-              setSelectedPointId('all')
-            }}
-            className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-              selectedMode === 'official_point'
-                ? 'bg-[#A73832] text-white shadow-xs'
-                : 'bg-[#FAF7F2] text-[#6E564F] hover:bg-[#F5EBDC]'
-            }`}
-          >
-            <Store className="w-4 h-4 mr-2" />
-            Puntos Oficiales
-          </button>
-          <button
-            onClick={() => setSelectedMode('home_delivery')}
-            className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-              selectedMode === 'home_delivery'
-                ? 'bg-[#A73832] text-white shadow-xs'
-                : 'bg-[#FAF7F2] text-[#6E564F] hover:bg-[#F5EBDC]'
-            }`}
-          >
-            <Truck className="w-4 h-4 mr-2" />
-            Entrega a Domicilio
-          </button>
-          <button
-            onClick={() => setSelectedMode('cetys_pickup')}
-            className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-              selectedMode === 'cetys_pickup'
-                ? 'bg-[#A73832] text-white shadow-xs'
-                : 'bg-[#FAF7F2] text-[#6E564F] hover:bg-[#F5EBDC]'
-            }`}
-          >
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Pickup CETYS
-          </button>
-        </div>
+        <WeeklyScheduleBatchComposer
+          rules={rules}
+          officialPoints={officialPoints}
+          onSaved={() => {
+            window.location.reload()
+          }}
+        />
 
-        {/* Point Customizer (Only for official_point) */}
-        {selectedMode === 'official_point' && (
-          <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#E8DCC4] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <label htmlFor={`${baseId}-point-select`} className="text-xs font-semibold text-[#261C19] uppercase tracking-wider block">
-                Alcance del horario:
-              </label>
-              <p className="text-xs text-[#6E564F]">
-                {selectedPointId === 'all'
-                  ? 'Aplica a todos los puntos oficiales salvo que alguno tenga horario personalizado.'
-                  : 'Horario específico con precedencia sobre la regla general de puntos.'}
+        <details className="rounded-2xl border border-[#E8DCC4] bg-[#FAF7F2]/60">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-[#6E564F]">
+            <span>Avanzado: editar un día a la vez</span>
+            <ChevronRight className="h-4 w-4" />
+          </summary>
+          <div className="space-y-5 border-t border-[#E8DCC4] p-4 sm:p-5">
+          {/* Mode Selector Tabs */}
+          <div className="flex flex-wrap gap-2 border-b border-[#F2ECE1] pb-4">
+            <button
+              onClick={() => {
+                setSelectedMode('official_point')
+                setSelectedPointId('all')
+              }}
+              className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                selectedMode === 'official_point'
+                  ? 'bg-[#A73832] text-white shadow-xs'
+                  : 'bg-[#FAF7F2] text-[#6E564F] hover:bg-[#F5EBDC]'
+              }`}
+            >
+              <Store className="w-4 h-4 mr-2" />
+              Puntos Oficiales
+            </button>
+            <button
+              onClick={() => setSelectedMode('home_delivery')}
+              className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                selectedMode === 'home_delivery'
+                  ? 'bg-[#A73832] text-white shadow-xs'
+                  : 'bg-[#FAF7F2] text-[#6E564F] hover:bg-[#F5EBDC]'
+              }`}
+            >
+              <Truck className="w-4 h-4 mr-2" />
+              Entrega a Domicilio
+            </button>
+            <button
+              onClick={() => setSelectedMode('cetys_pickup')}
+              className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                selectedMode === 'cetys_pickup'
+                  ? 'bg-[#A73832] text-white shadow-xs'
+                  : 'bg-[#FAF7F2] text-[#6E564F] hover:bg-[#F5EBDC]'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Pickup CETYS
+            </button>
+          </div>
+  
+          {/* Point Customizer (Only for official_point) */}
+          {selectedMode === 'official_point' && (
+            <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#E8DCC4] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label htmlFor={`${baseId}-point-select`} className="text-xs font-semibold text-[#261C19] uppercase tracking-wider block">
+                  Alcance del horario:
+                </label>
+                <p className="text-xs text-[#6E564F]">
+                  {selectedPointId === 'all'
+                    ? 'Aplica a todos los puntos oficiales salvo que alguno tenga horario personalizado.'
+                    : 'Horario específico con precedencia sobre la regla general de puntos.'}
+                </p>
+              </div>
+              <select
+                id={`${baseId}-point-select`}
+                value={selectedPointId}
+                onChange={(e) => setSelectedPointId(e.target.value)}
+                className="text-xs font-medium bg-white border border-[#E8DCC4] rounded-lg px-3 py-2 text-[#261C19] focus:ring-1 focus:ring-[#A73832] focus:outline-none"
+              >
+                <option value="all">Horario para todos los puntos</option>
+                {officialPoints.map((pt) => (
+                  <option key={pt.id} value={pt.id}>
+                    Personalizar: {pt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+  
+          {/* CETYS Normal Config Note */}
+          {selectedMode === 'cetys_pickup' && (
+            <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#E8DCC4] text-xs text-[#6E564F] space-y-1">
+              <p className="font-semibold text-[#261C19] flex items-center">
+                <Info className="w-4 h-4 mr-1 text-[#A73832]" />
+                Configuración de Pickup CETYS:
+              </p>
+              <p>
+                Define los días activos, el tipo de horario (horas fijas o intervalos) y el tiempo mínimo de anticipación para las entregas a la comunidad CETYS.
               </p>
             </div>
-            <select
-              id={`${baseId}-point-select`}
-              value={selectedPointId}
-              onChange={(e) => setSelectedPointId(e.target.value)}
-              className="text-xs font-medium bg-white border border-[#E8DCC4] rounded-lg px-3 py-2 text-[#261C19] focus:ring-1 focus:ring-[#A73832] focus:outline-none"
-            >
-              <option value="all">Horario para todos los puntos</option>
-              {officialPoints.map((pt) => (
-                <option key={pt.id} value={pt.id}>
-                  Personalizar: {pt.name}
-                </option>
-              ))}
-            </select>
+          )}
+  
+          {/* 7 Days List with subcomponent DayScheduleRow */}
+          <div className="space-y-4">
+            {DAYS_OF_WEEK.map(({ day, name }) => {
+              const rule = currentRules.find((r) => r.day_of_week === day)
+              const fixedSlotsStr = (rule?.fixed_slots || []).map((s) => s.slot_time).join(',')
+  
+              return (
+                <DayScheduleRow
+                  key={`${day}-${selectedMode}-${selectedPointId}-${rule?.id || 'none'}-${rule?.schedule_type || 'interval'}-${rule?.open_time || ''}-${rule?.close_time || ''}-${rule?.slot_interval_minutes || ''}-${rule?.min_lead_minutes ?? ''}-${fixedSlotsStr}-${rule?.is_active ?? false}`}
+                  day={day}
+                  name={name}
+                  rule={rule}
+                  isPending={isPending}
+                  onSave={handleSaveDaySchedule}
+                  onDelete={handleDeleteRule}
+                />
+              )
+            })}
           </div>
-        )}
-
-        {/* CETYS Normal Config Note */}
-        {selectedMode === 'cetys_pickup' && (
-          <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#E8DCC4] text-xs text-[#6E564F] space-y-1">
-            <p className="font-semibold text-[#261C19] flex items-center">
-              <Info className="w-4 h-4 mr-1 text-[#A73832]" />
-              Configuración de Pickup CETYS:
-            </p>
-            <p>
-              Define los días activos, el tipo de horario (horas fijas o intervalos) y el tiempo mínimo de anticipación para las entregas a la comunidad CETYS.
-            </p>
           </div>
-        )}
-
-        {/* 7 Days List with subcomponent DayScheduleRow */}
-        <div className="space-y-4">
-          {DAYS_OF_WEEK.map(({ day, name }) => {
-            const rule = currentRules.find((r) => r.day_of_week === day)
-            const fixedSlotsStr = (rule?.fixed_slots || []).map((s) => s.slot_time).join(',')
-
-            return (
-              <DayScheduleRow
-                key={`${day}-${selectedMode}-${selectedPointId}-${rule?.id || 'none'}-${rule?.schedule_type || 'interval'}-${rule?.open_time || ''}-${rule?.close_time || ''}-${rule?.slot_interval_minutes || ''}-${rule?.min_lead_minutes ?? ''}-${fixedSlotsStr}-${rule?.is_active ?? false}`}
-                day={day}
-                name={name}
-                rule={rule}
-                isPending={isPending}
-                onSave={handleSaveDaySchedule}
-                onDelete={handleDeleteRule}
-              />
-            )
-          })}
-        </div>
+        </details>
       </div>
 
       {/* SECTION B: CALENDARIO Y EXCEPCIONES */}
