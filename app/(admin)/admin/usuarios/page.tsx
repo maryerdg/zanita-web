@@ -1,18 +1,18 @@
-import { getCustomersList } from '@/app/actions/admin'
+import { getUsersList } from '@/app/actions/admin'
 import UsersClient from './UsersClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function UsersAdminPage() {
-  const { customers, error } = await getCustomersList()
+  const { users, error } = await getUsersList()
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 text-red-800 rounded-xl border border-red-200 text-sm">
-        Error al cargar clientes: {error}
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">
+        Error al cargar usuarios: {error}
       </div>
     )
   }
 
-  return <UsersClient initialCustomers={customers || []} />
+  return <UsersClient initialUsers={users || []} />
 }
