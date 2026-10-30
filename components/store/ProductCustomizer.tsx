@@ -97,7 +97,7 @@ function StepperRow({
     : group.maxSelections !== null && groupTotal >= group.maxSelections;
 
   // For alwaysCharge options, maxSelections check is bypassed (they don't count toward effective qty)
-  const canIncrement = option.alwaysCharge ? true : !atMax;
+  const canIncrement = option.isAvailable && (option.alwaysCharge ? true : !atMax);
 
   const priceCents   = option.additionalPriceCents;
   // Always show price for alwaysCharge (e.g. ⭐ +$35 c/u).
@@ -111,8 +111,13 @@ function StepperRow({
   return (
     <div className="flex items-center justify-between py-3 border-b border-[#F5EBDC] last:border-0">
       <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-semibold text-[#261C19]">{option.name}</span>
-        {priceLabel && (
+        <span className={`text-sm font-semibold ${option.isAvailable ? 'text-[#261C19]' : 'text-stone-400'}`}>
+          {option.name}
+          {!option.isAvailable && (
+            <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-amber-700">Agotado</span>
+          )}
+        </span>
+        {priceLabel && option.isAvailable && (
           <span className={`text-xs font-medium ${option.alwaysCharge ? 'text-[#A73832]' : 'text-[#6E564F]'}`}>
             {option.alwaysCharge ? `⭐ ${priceLabel}` : priceLabel}
           </span>
@@ -160,20 +165,24 @@ interface CheckRowProps {
 }
 
 function CheckRow({ option, selected, disabled, onToggle }: CheckRowProps) {
+  const unavailable = !option.isAvailable;
   return (
     <button
       onClick={onToggle}
-      disabled={disabled && !selected}
+      disabled={(disabled || unavailable) && !selected}
       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
         selected
           ? 'border-[#A73832] bg-[#FFF9F2] shadow-inner'
-          : disabled
+          : disabled || unavailable
           ? 'border-[#E4D5C1] bg-[#FAFAFA] opacity-50 cursor-not-allowed'
           : 'border-[#E4D5C1] bg-white hover:border-[#A73832]/40 hover:bg-[#FFF9F2]/60'
       }`}
       aria-pressed={selected}
     >
-      <span className="text-sm font-semibold text-[#261C19]">{option.name}</span>
+      <span className="text-sm font-semibold text-[#261C19]">
+        {option.name}
+        {unavailable && <span className="ml-2 text-[9px] font-bold uppercase text-amber-700">Agotado</span>}
+      </span>
       <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
         selected ? 'border-[#A73832] bg-[#A73832]' : 'border-[#E4D5C1]'
       }`}>
@@ -223,7 +232,7 @@ function GroupSection({ group, selections, onChange, isBlocked = false }: GroupS
   });
 
   // Check if group has no active options
-  const hasNoOptions = group.options.length === 0;
+  const hasNoOptions = group.options.filter((option) => option.isAvailable).length === 0;
 
   // Content element ID for accessibility
   const contentId = `group-content-${group.id}`;
@@ -587,7 +596,7 @@ function GroupSection({ group, selections, onChange, isBlocked = false }: GroupS
               key={opt.id}
               option={opt}
               selected={selected}
-              disabled={atMax}
+              disabled={atMax || !opt.isAvailable}
               onToggle={handleToggle}
             />
           );
@@ -617,8 +626,8 @@ export function ProductCustomizer({ product, optionGroups }: ProductCustomizerPr
 
   // ---- Derived state -------------------------------------------------------
   const isFormValid = useMemo(
-    () => validateAllGroups(optionGroups, selections),
-    [optionGroups, selections]
+    () => product.isAvailable && validateAllGroups(optionGroups, selections),
+    [product.isAvailable, optionGroups, selections]
   );
 
   const dynamicPricePesos = useMemo(
@@ -638,7 +647,7 @@ export function ProductCustomizer({ product, optionGroups }: ProductCustomizerPr
   }, []);
 
   const handleAddToCart = () => {
-    if (!isFormValid) return;
+    if (!isFormValid || !product.isAvailable) return;
 
     const activeOptions = selections.filter(s => s.quantity > 0);
 
@@ -697,7 +706,7 @@ export function ProductCustomizer({ product, optionGroups }: ProductCustomizerPr
 
   // Check if any required group has no active options (e.g. Frutas de Temporada)
   const hasBlockedRequiredGroup = useMemo(
-    () => optionGroups.some(g => g.isRequired && g.options.length === 0),
+    () => optionGroups.some(g => g.isRequired && g.options.filter(option => option.isAvailable).length === 0),
     [optionGroups]
   );
 
@@ -709,9 +718,17 @@ export function ProductCustomizer({ product, optionGroups }: ProductCustomizerPr
   // ---- Render customizer --------------------------------------------------
   return (
     <div className="space-y-6">
+      {!product.isAvailable && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-bold">Agotado por el momento</p>
+          <p className="mt-1 text-xs">Puedes revisar las opciones, pero este producto no se puede agregar al carrito todavía.</p>
+        </div>
+      )}
+
       {/* Option Groups */}
       {optionGroups.map(group => {
-        const isThisGroupBlocked = hasBlockedRequiredGroup && !(group.isRequired && group.options.length === 0);
+        const groupHasNoAvailableOptions = group.options.filter(option => option.isAvailable).length === 0;
+        const isThisGroupBlocked = hasBlockedRequiredGroup && !(group.isRequired && groupHasNoAvailableOptions);
 
         return (
           <div key={group.id} className="space-y-3 pt-4 border-t border-[#F5EBDC] first:border-t-0 first:pt-0">
@@ -787,7 +804,9 @@ export function ProductCustomizer({ product, optionGroups }: ProductCustomizerPr
           }`}
           aria-label={`Agregar ${product.name} al carrito`}
         >
-          {justAdded ? (
+          {!product.isAvailable ? (
+            <span>Agotado por ahora</span>
+          ) : justAdded ? (
             <>
               <Check className="w-4.5 h-4.5" />
               <span>¡Agregado al carrito!</span>
@@ -845,7 +864,7 @@ function SimpleAddToCart({ product }: { product: CatalogProduct }) {
         <div className="flex items-center border border-[#A73832] rounded-md overflow-hidden bg-white shrink-0">
           <button
             onClick={() => setQuantity(q => Math.max(1, q - 1))}
-            disabled={quantity <= 1}
+            disabled={quantity <= 1 || !product.isAvailable}
             className="p-3 md:p-4 text-[#A73832] hover:bg-[#F5EBDC] disabled:opacity-50 transition-colors"
             aria-label="Disminuir cantidad"
           >
@@ -856,7 +875,8 @@ function SimpleAddToCart({ product }: { product: CatalogProduct }) {
           </span>
           <button
             onClick={() => setQuantity(q => q + 1)}
-            className="p-3 md:p-4 text-[#A73832] hover:bg-[#F5EBDC] transition-colors"
+            disabled={!product.isAvailable}
+            className="p-3 md:p-4 text-[#A73832] hover:bg-[#F5EBDC] disabled:opacity-50 transition-colors"
             aria-label="Aumentar cantidad"
           >
             <Plus className="w-4 h-4 md:w-5 md:h-5" />
@@ -865,9 +885,13 @@ function SimpleAddToCart({ product }: { product: CatalogProduct }) {
 
         <button
           onClick={handleAddToCart}
-          disabled={justAdded}
+          disabled={justAdded || !product.isAvailable}
           className={`flex-1 inline-flex items-center justify-center gap-3 px-8 py-4 rounded-md text-white transition-all text-xs font-bold uppercase tracking-wider shadow-2xs ${
-            justAdded ? 'bg-[#4F7942]' : 'bg-[#A73832] hover:bg-[#8e2e28]'
+            !product.isAvailable
+              ? 'bg-[#E4D5C1] text-[#6E564F] cursor-not-allowed'
+              : justAdded
+              ? 'bg-[#4F7942]'
+              : 'bg-[#A73832] hover:bg-[#8e2e28]'
           }`}
           aria-label={`Agregar ${product.name} al carrito`}
         >
