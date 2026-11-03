@@ -1275,6 +1275,7 @@ export async function getUsersList(
 
   return {
     users,
+    currentUserId: auth.user?.id || null,
     counts: {
       all: users.length,
       customers: users.filter((user) => user.role === 'customer').length,
@@ -1290,6 +1291,89 @@ export async function getCustomersList(searchQuery?: string) {
   return {
     customers: result.users || [],
     error: result.error,
+  }
+}
+
+export async function setUserAdminRole(userId: string, makeAdmin: boolean) {
+  const auth = await verifyAdminCaller()
+  if (auth.error || !auth.supabase || !auth.user) {
+    return { error: auth.error || 'Error de autenticación' }
+  }
+
+  if (!userId) return { error: 'Usuario inválido' }
+
+  if (!makeAdmin && userId === auth.user.id) {
+    return {
+      error: 'No puedes quitarte tu propio acceso de administrador desde el panel.',
+    }
+  }
+
+  const { data: target, error: targetError } = await auth.supabase
+    .from('profiles')
+    .select('id, full_name, email, role')
+    .eq('id', userId)
+    .single()
+
+  if (targetError || !target) {
+    return { error: 'No se encontró el usuario.' }
+  }
+
+  const nextRole = makeAdmin ? 'admin' : 'customer'
+
+  if (target.role === nextRole) {
+    return {
+      success: true,
+      message: makeAdmin
+        ? 'Este usuario ya es administrador.'
+        : 'Este usuario ya es cliente.',
+    }
+  }
+
+  if (!makeAdmin) {
+    const { count, error: countError } = await auth.supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+
+    if (countError) {
+      console.error('Error counting admins:', countError)
+      return { error: 'No se pudo verificar cuántos administradores existen.' }
+    }
+
+    if ((count || 0) <= 1) {
+      return { error: 'No puedes quitar al último administrador de Zanita.' }
+    }
+  }
+
+  const updatePayload = makeAdmin
+    ? { role: 'admin', cetys_pickup_enabled: false }
+    : { role: 'customer' }
+
+  const { data: updated, error } = await auth.supabase
+    .from('profiles')
+    .update(updatePayload)
+    .eq('id', userId)
+    .select('id, role')
+    .single()
+
+  if (error || !updated) {
+    console.error('Error updating admin role:', error)
+    return {
+      error:
+        error?.message ||
+        'No se pudo actualizar el rol. Revisa los permisos del sistema.',
+    }
+  }
+
+  revalidatePath('/admin/usuarios')
+  revalidatePath('/admin')
+
+  return {
+    success: true,
+    role: updated.role as 'admin' | 'customer',
+    message: makeAdmin
+      ? `${target.full_name || target.email || 'El usuario'} ahora es Admin.`
+      : `${target.full_name || target.email || 'El usuario'} ya no es Admin.`,
   }
 }
 
