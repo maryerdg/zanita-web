@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useTransition } from 'react'
 import {
   toggleCetysPickup,
+  setUserAdminRole,
   type AdminUserProfileRow,
   type UserRoleFilter,
 } from '@/app/actions/admin'
@@ -20,6 +21,7 @@ import {
 
 interface Props {
   initialUsers: AdminUserProfileRow[]
+  currentUserId: string | null
 }
 
 function roleLabel(role: string) {
@@ -35,7 +37,7 @@ function roleBadge(role: string) {
   return 'border-[#E8DCC4] bg-[#FAF7F2] text-[#6E564F]'
 }
 
-export default function UsersClient({ initialUsers }: Props) {
+export default function UsersClient({ initialUsers, currentUserId }: Props) {
   const [users, setUsers] = useState<AdminUserProfileRow[]>(initialUsers)
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRoleFilter>('all')
@@ -100,6 +102,44 @@ export default function UsersClient({ initialUsers }: Props) {
           )
         )
       }
+    })
+  }
+
+  const handleRoleChange = (user: AdminUserProfileRow, makeAdmin: boolean) => {
+    const actionLabel = makeAdmin ? 'hacer Admin' : 'quitarle el acceso de Admin'
+    const confirmed = window.confirm(
+      `¿Seguro que quieres ${actionLabel} a ${user.full_name || user.email || 'este usuario'}?`
+    )
+
+    if (!confirmed) return
+
+    setLoadingId(user.id)
+    startTransition(async () => {
+      const res = await setUserAdminRole(user.id, makeAdmin)
+      setLoadingId(null)
+
+      if (res.error) {
+        showNotification('error', res.error)
+        return
+      }
+
+      const nextRole = makeAdmin ? 'admin' : 'customer'
+
+      setUsers((prev) =>
+        prev.map((item) =>
+          item.id === user.id
+            ? {
+                ...item,
+                role: nextRole,
+                cetys_pickup_enabled: makeAdmin
+                  ? false
+                  : item.cetys_pickup_enabled,
+              }
+            : item
+        )
+      )
+
+      showNotification('success', res.message || 'Rol actualizado')
     })
   }
 
@@ -219,6 +259,7 @@ export default function UsersClient({ initialUsers }: Props) {
                     <th className="px-5 py-3 font-semibold">Rol</th>
                     <th className="px-5 py-3 font-semibold">Contacto</th>
                     <th className="px-5 py-3 font-semibold">Registro</th>
+                    <th className="px-5 py-3 font-semibold">Acceso Admin</th>
                     <th className="px-5 py-3 text-right font-semibold">Pickup CETYS</th>
                   </tr>
                 </thead>
@@ -272,6 +313,32 @@ export default function UsersClient({ initialUsers }: Props) {
                             <Calendar className="mr-1.5 h-3.5 w-3.5 text-[#6E564F]/60" />
                             <span>{regDate}</span>
                           </div>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          {user.id === currentUserId ? (
+                            <span className="inline-flex rounded-full border border-[#E8DCC4] bg-[#FAF7F2] px-2.5 py-1 text-[10px] font-bold text-[#6E564F]">
+                              Tu cuenta
+                            </span>
+                          ) : user.role === 'admin' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRoleChange(user, false)}
+                              disabled={isPending && loadingId === user.id}
+                              className="min-h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-[11px] font-bold text-red-700 hover:bg-red-100 disabled:opacity-45"
+                            >
+                              Quitar Admin
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRoleChange(user, true)}
+                              disabled={isPending && loadingId === user.id}
+                              className="min-h-9 rounded-lg border border-violet-200 bg-violet-50 px-3 text-[11px] font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-45"
+                            >
+                              Hacer Admin
+                            </button>
+                          )}
                         </td>
 
                         <td className="px-5 py-4 text-right">
@@ -376,6 +443,32 @@ export default function UsersClient({ initialUsers }: Props) {
                         <Calendar className="mr-1.5 h-3 w-3 shrink-0" />
                         <span>Registro: {regDate}</span>
                       </div>
+                    </div>
+
+                    <div className="border-t border-[#F2ECE1] pt-3">
+                      {user.id === currentUserId ? (
+                        <div className="rounded-xl bg-[#FAF7F2] px-3 py-2 text-xs font-semibold text-[#6E564F]">
+                          Esta es tu cuenta de Admin
+                        </div>
+                      ) : user.role === 'admin' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRoleChange(user, false)}
+                          disabled={isPending && loadingId === user.id}
+                          className="min-h-10 w-full rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 disabled:opacity-45"
+                        >
+                          Quitar acceso de Admin
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRoleChange(user, true)}
+                          disabled={isPending && loadingId === user.id}
+                          className="min-h-10 w-full rounded-xl border border-violet-200 bg-violet-50 px-3 text-xs font-bold text-violet-700 disabled:opacity-45"
+                        >
+                          Hacer Admin
+                        </button>
+                      )}
                     </div>
 
                     {user.role === 'customer' && (
