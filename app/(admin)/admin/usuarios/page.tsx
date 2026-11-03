@@ -4,7 +4,7 @@ import UsersClient from './UsersClient'
 export const dynamic = 'force-dynamic'
 
 export default async function UsersAdminPage() {
-  const { users, error } = await getUsersList()
+  const { users, currentUserId, error } = await getUsersList()
 
   if (error) {
     return (
@@ -14,5 +14,5 @@ export default async function UsersAdminPage() {
     )
   }
 
-  return <UsersClient initialUsers={users || []} />
+  return <UsersClient initialUsers={users || []} currentUserId={currentUserId || null} />
 }
